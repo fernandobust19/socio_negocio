@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Empresa - Socio Negocio</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="navbar">
+    <div class="nav-brand">Socio Negocio</div>
+    <a href="index.html" class="nav-link">← Volver al inicio</a>
+  </div>
+
+  <div class="auth-container">
+    <div class="auth-card">
+      <h1>Portal Empresas</h1>
+      <p class="subtitle">Registra tu empresa y administra tus productos</p>
+      
+      <div class="tab-container">
+        <button class="tab-btn active" onclick="showTab('login')">Iniciar Sesión</button>
+        <button class="tab-btn" onclick="showTab('register')">Registrarse</button>
+      </div>
+
+      <!-- Login Form -->
+      <div id="login-tab" class="tab-content active">
+        <form id="empresa-login-form">
+          <div class="form-group">
+            <label for="login-email">Email:</label>
+            <input type="email" id="login-email" name="email" required>
+          </div>
+          <div class="form-group">
+            <label for="login-password">Contraseña:</label>
+            <input type="password" id="login-password" name="password" required>
+          </div>
+          <button type="submit" class="btn-primary">Iniciar Sesión</button>
+        </form>
+      </div>
+
+      <!-- Register Form -->
+      <div id="register-tab" class="tab-content">
+        <form id="empresa-register-form">
+          <div class="form-group">
+            <label for="empresa-nombre">Nombre de la Empresa:</label>
+            <input type="text" id="empresa-nombre" name="nombre" required>
+          </div>
+          <div class="form-group">
+            <label for="empresa-ruc">RUC:</label>
+            <input type="text" id="empresa-ruc" name="ruc" required>
+          </div>
+          <div class="form-group">
+            <label for="empresa-direccion">Dirección:</label>
+            <input type="text" id="empresa-direccion" name="direccion" required>
+          </div>
+          <div class="form-group">
+            <label for="empresa-telefono">Teléfono:</label>
+            <input type="tel" id="empresa-telefono" name="telefono" required>
+          </div>
+          <div class="form-group">
+            <label for="empresa-email">Email:</label>
+            <input type="email" id="empresa-email" name="email" required>
+          </div>
+          <div class="form-group">
+            <label for="empresa-password">Contraseña:</label>
+            <input type="password" id="empresa-password" name="password" required>
+          </div>
+          <div class="form-group">
+            <label for="empresa-logo">Logo de la Empresa:</label>
+            <input type="file" id="empresa-logo" name="logo" accept="image/*">
+            <small>Formatos permitidos: JPG, PNG, GIF (máximo 2MB)</small>
+          </div>
+          <div class="form-group">
+            <label for="empresa-descripcion">Descripción de la Empresa:</label>
+            <textarea id="empresa-descripcion" name="descripcion" rows="3"></textarea>
+          </div>
+          <button type="submit" class="btn-primary">Registrar Empresa</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+  <script>
+    // Handle empresa login
+    document.getElementById('empresa-login-form').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const email = document.getElementById('login-email').value;
+      const password = document.getElementById('login-password').value;
+      
+      if (loginEmpresa(email, password)) {
+        window.location.href = 'dashboard-empresa.html';
+      } else {
+        alert('Email o contraseña incorrectos');
+      }
+    });
+
+    // Handle empresa registration
+    document.getElementById('empresa-register-form').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const formData = new FormData(e.target);
+      
+      // Handle logo file
+      const logoFile = formData.get('logo');
+      if (logoFile && logoFile.size > 0) {
+        const reader = new FileReader();
+        reader.onload = function(event) {
+          const empresa = Object.fromEntries(formData.entries());
+          empresa.logo = event.target.result; // Base64 string
+          
+          if (registerEmpresa(empresa)) {
+            alert('Empresa registrada exitosamente');
+            window.location.href = 'dashboard-empresa.html';
+          } else {
+            alert('Error al registrar empresa. Verifique los datos.');
+          }
+        };
+        reader.readAsDataURL(logoFile);
+      } else {
+        const empresa = Object.fromEntries(formData.entries());
+        
+        if (registerEmpresa(empresa)) {
+          alert('Empresa registrada exitosamente');
+          window.location.href = 'dashboard-empresa.html';
+        } else {
+          alert('Error al registrar empresa. Verifique los datos.');
+        }
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Dashboard Socio - Socio Negocio</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="navbar">
+    <div class="nav-brand">Socio Negocio - Panel Socio</div>
+    <div class="nav-right">
+      <span id="socio-name">Socio</span>
+      <button onclick="logout()" class="btn-logout">Cerrar Sesión</button>
+    </div>
+  </div>
+
+  <div class="dashboard-container">
+    <div class="sidebar">
+      <div class="sidebar-item active" onclick="showSection('empresas')">
+        <span>🏢</span> Empresas Disponibles
+      </div>
+      <div class="sidebar-item" onclick="showSection('productos')">
+        <span>📦</span> Productos para Vender
+      </div>
+      <div class="sidebar-item" onclick="showSection('clientes')">
+        <span>👤</span> Mis Clientes
+      </div>
+      <div class="sidebar-item" onclick="showSection('proformas')">
+        <span>📋</span> Proformas
+      </div>
+      <div class="sidebar-item" onclick="showSection('mis-ventas')">
+        <span>💰</span> Mis Ventas
+      </div>
+      <div class="sidebar-item" onclick="showSection('comisiones')">
+        <span>📈</span> Comisiones
+      </div>
+      <div class="sidebar-item" onclick="showSection('perfil')">
+        <span>👤</span> Mi Perfil
+      </div>
+    </div>
+
+    <div class="main-content">
+      <!-- Empresas Section -->
+      <div id="empresas-section" class="section active">
+        <div class="section-header">
+          <h2>Empresas Registradas</h2>
+          <p class="section-subtitle">Selecciona las empresas cuyos productos quieres vender</p>
+        </div>
+        
+        <div class="empresas-grid" id="empresas-container">
+          <!-- Las empresas se cargarán dinámicamente -->
+        </div>
+      </div>
+
+      <!-- Productos Section -->
+      <div id="productos-section" class="section">
+        <div class="section-header">
+          <h2>Productos Disponibles para Vender</h2>
+          <div class="filters">
+            <select id="empresa-filter" onchange="filterProducts()">
+              <option value="">Todas las empresas</option>
+            </select>
+            <select id="categoria-filter" onchange="filterProducts()">
+              <option value="">Todas las categorías</option>
+              <option value="tejas">Tejas</option>
+              <option value="materiales">Materiales de Construcción</option>
+              <option value="herramientas">Herramientas</option>
+              <option value="otros">Otros</option>
+            </select>
+          </div>
+        </div>
+        
+        <div class="products-grid" id="productos-disponibles">
+          <!-- Los productos se cargarán dinámicamente -->
+        </div>
+      </div>
+
+      <!-- Clientes Section -->
+      <div id="clientes-section" class="section">
+        <div class="section-header">
+          <h2>Gestión de Clientes</h2>
+          <button onclick="showAgregarClienteModal()" class="btn-primary">+ Agregar Cliente</button>
+        </div>
+        
+        <div class="table-container">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Nombre/Empresa</th>
+                <th>Contacto</th>
+                <th>Email</th>
+                <th>Teléfono</th>
+                <th>Dirección</th>
+                <th>Proformas</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="clientes-table">
+              <!-- Los clientes se cargarán dinámicamente -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Proformas Section -->
+      <div id="proformas-section" class="section">
+        <div class="section-header">
+          <h2>Mis Proformas</h2>
+          <div class="filters">
+            <select id="proformas-estado-filter" onchange="filterProformasSocio()">
+              <option value="">Todos los estados</option>
+              <option value="enviada">Enviadas</option>
+              <option value="aprobada">Aprobadas</option>
+              <option value="rechazada">Rechazadas</option>
+            </select>
+          </div>
+        </div>
+        
+        <div class="table-container">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Fecha</th>
+                <th>Cliente</th>
+                <th>Empresa</th>
+                <th>Producto</th>
+                <th>Cantidad</th>
+                <th>Total Estimado</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="proformas-socio-table">
+              <!-- Las proformas se cargarán dinámicamente -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Mis Ventas Section -->
+      <div id="mis-ventas-section" class="section">
+        <div class="section-header">
+          <h2>Registro de Ventas</h2>
+          <button onclick="showRegistrarVentaModal()" class="btn-primary">+ Registrar Venta</button>
+        </div>
+        
+        <div class="table-container">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Fecha</th>
+                <th>Empresa</th>
+                <th>Producto</th>
+                <th>Cantidad</th>
+                <th>Precio Unit.</th>
+                <th>Total</th>
+                <th>Comisión</th>
+                <th>Estado</th>
+              </tr>
+            </thead>
+            <tbody id="ventas-socio-table">
+              <!-- Las ventas se cargarán dinámicamente -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Comisiones Section -->
+      <div id="comisiones-section" class="section">
+        <div class="section-header">
+          <h2>Panel de Comisiones</h2>
+        </div>
+        
+        <div class="stats-grid">
+          <div class="stat-card">
+            <h3>Comisiones del Mes</h3>
+            <p class="stat-number" id="comisiones-mes">$0</p>
+          </div>
+          <div class="stat-card">
+            <h3>Comisiones Totales</h3>
+            <p class="stat-number" id="comisiones-total">$0</p>
+          </div>
+          <div class="stat-card">
+            <h3>Ventas Realizadas</h3>
+            <p class="stat-number" id="ventas-realizadas">0</p>
+          </div>
+          <div class="stat-card">
+            <h3>Empresas Colaborando</h3>
+            <p class="stat-number" id="empresas-colaborando">0</p>
+          </div>
+        </div>
+
+        <div class="chart-container">
+          <h3>Comisiones por Empresa</h3>
+          <div id="comisiones-chart" class="chart">
+            <!-- Gráfico simple de comisiones por empresa -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Perfil Section -->
+      <div id="perfil-section" class="section">
+        <div class="section-header">
+          <h2>Mi Información Personal</h2>
+        </div>
+        
+        <form id="socio-profile-form" class="profile-form">
+          <div class="form-group">
+            <label>Nombres:</label>
+            <input type="text" id="profile-nombres" name="nombres">
+          </div>
+          <div class="form-group">
+            <label>Apellidos:</label>
+            <input type="text" id="profile-apellidos" name="apellidos">
+          </div>
+          <div class="form-group">
+            <label>Cédula:</label>
+            <input type="text" id="profile-cedula" name="cedula" readonly>
+          </div>
+          <div class="form-group">
+            <label>Teléfono:</label>
+            <input type="tel" id="profile-telefono" name="telefono">
+          </div>
+          <div class="form-group">
+            <label>Email:</label>
+            <input type="email" id="profile-email" name="email">
+          </div>
+          <div class="form-group">
+            <label>Dirección:</label>
+            <input type="text" id="profile-direccion" name="direccion">
+          </div>
+          <div class="form-group">
+            <label>Experiencia:</label>
+            <textarea id="profile-experiencia" name="experiencia" rows="4"></textarea>
+          </div>
+          <button type="submit" class="btn-primary">Actualizar Información</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal para agregar cliente -->
+  <div id="agregar-cliente-modal" class="modal">
+    <div class="modal-content">
+      <span class="close" onclick="closeAgregarClienteModal()">&times;</span>
+      <h2>Agregar Nuevo Cliente</h2>
+      <form id="agregar-cliente-form">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Tipo de Cliente:</label>
+            <select id="cliente-tipo" name="tipo" required onchange="toggleClienteFields()">
+              <option value="">Seleccionar tipo</option>
+              <option value="persona">Persona Natural</option>
+              <option value="empresa">Empresa</option>
+            </select>
+          </div>
+        </div>
+        
+        <div id="persona-fields" class="cliente-fields" style="display: none;">
+          <div class="form-row">
+            <div class="form-group">
+              <label>Nombres:</label>
+              <input type="text" id="cliente-nombres" name="nombres">
+            </div>
+            <div class="form-group">
+              <label>Apellidos:</label>
+              <input type="text" id="cliente-apellidos" name="apellidos">
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Cédula:</label>
+            <input type="text" id="cliente-cedula" name="cedula">
+          </div>
+        </div>
+        
+        <div id="empresa-fields" class="cliente-fields" style="display: none;">
+          <div class="form-group">
+            <label>Razón Social:</label>
+            <input type="text" id="cliente-razon-social" name="razonSocial">
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>RUC:</label>
+              <input type="text" id="cliente-ruc" name="ruc">
+            </div>
+            <div class="form-group">
+              <label>Representante Legal:</label>
+              <input type="text" id="cliente-representante" name="representante">
+            </div>
+          </div>
+        </div>
+        
+        <div class="form-row">
+          <div class="form-group">
+            <label>Email:</label>
+            <input type="email" id="cliente-email" name="email" required>
+          </div>
+          <div class="form-group">
+            <label>Teléfono:</label>
+            <input type="tel" id="cliente-telefono" name="telefono" required>
+          </div>
+        </div>
+        
+        <div class="form-group">
+          <label>Dirección:</label>
+          <input type="text" id="cliente-direccion" name="direccion" required>
+        </div>
+        
+        <div class="form-group">
+          <label>Ciudad:</label>
+          <input type="text" id="cliente-ciudad" name="ciudad" required>
+        </div>
+        
+        <div class="form-group">
+          <label>Notas:</label>
+          <textarea id="cliente-notas" name="notas" rows="3" placeholder="Información adicional del cliente..."></textarea>
+        </div>
+        
+        <div class="form-actions">
+          <button type="button" onclick="closeAgregarClienteModal()" class="btn-secondary">Cancelar</button>
+          <button type="submit" class="btn-primary">Guardar Cliente</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal para solicitar proforma -->
+  <div id="solicitar-proforma-modal" class="modal">
+    <div class="modal-content">
+      <span class="close" onclick="closeSolicitarProformaModal()">&times;</span>
+      <h2>Solicitar Proforma</h2>
+      <form id="solicitar-proforma-form">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Cliente:</label>
+            <select id="proforma-cliente" name="clienteId" required>
+              <option value="">Seleccionar cliente</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Empresa:</label>
+            <select id="proforma-empresa-socio" name="empresaId" required onchange="loadProductosProforma()">
+              <option value="">Seleccionar empresa</option>
+            </select>
+          </div>
+        </div>
+        
+        <div class="form-group">
+          <label>Producto:</label>
+          <select id="proforma-producto-socio" name="productoId" required>
+            <option value="">Seleccionar producto</option>
+          </select>
+        </div>
+        
+        <div class="form-row">
+          <div class="form-group">
+            <label>Cantidad Solicitada:</label>
+            <input type="number" id="proforma-cantidad-socio" name="cantidad" min="1" required>
+          </div>
+          <div class="form-group">
+            <label>Precio Estimado:</label>
+            <input type="number" id="proforma-precio-estimado" name="precioEstimado" step="0.01" readonly>
+          </div>
+        </div>
+        
+        <div class="form-group">
+          <label>Observaciones del Cliente:</label>
+          <textarea id="proforma-observaciones" name="observaciones" rows="3" placeholder="Requerimientos especiales, plazos, etc."></textarea>
+        </div>
+        
+        <div class="form-group">
+          <label>Urgencia:</label>
+          <select id="proforma-urgencia" name="urgencia" required>
+            <option value="normal">Normal (5-7 días)</option>
+            <option value="urgente">Urgente (1-3 días)</option>
+            <option value="muy_urgente">Muy Urgente (24 horas)</option>
+          </select>
+        </div>
+        
+        <div class="cliente-info" id="cliente-info-preview">
+          <!-- Información del cliente seleccionado se mostrará aquí -->
+        </div>
+        
+        <div class="form-actions">
+          <button type="button" onclick="closeSolicitarProformaModal()" class="btn-secondary">Cancelar</button>
+          <button type="submit" class="btn-primary">Enviar Solicitud de Proforma</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal para ver proforma recibida -->
+  <div id="ver-proforma-modal" class="modal">
+    <div class="modal-content proforma-modal">
+      <span class="close" onclick="closeVerProformaModal()">&times;</span>
+      <div id="proforma-content">
+        <!-- El contenido de la proforma se cargará aquí -->
+      </div>
+      <div class="form-actions">
+        <button onclick="descargarProforma()" class="btn-primary">Descargar PDF</button>
+        <button onclick="closeVerProformaModal()" class="btn-secondary">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal para registrar venta -->
+  <div id="registrar-venta-modal" class="modal">
+    <div class="modal-content">
+      <span class="close" onclick="closeRegistrarVentaModal()">&times;</span>
+      <h2>Registrar Nueva Venta</h2>
+      <form id="registrar-venta-form">
+        <div class="form-group">
+          <label>Empresa:</label>
+          <select id="venta-empresa" name="empresaId" required onchange="loadProductosVenta()">
+            <option value="">Seleccionar empresa</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Producto:</label>
+          <select id="venta-producto" name="productoId" required onchange="updatePrecioVenta()">
+            <option value="">Seleccionar producto</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Cantidad:</label>
+          <input type="number" id="venta-cantidad" name="cantidad" min="1" required onchange="calculateTotal()">
+        </div>
+        <div class="form-group">
+          <label>Precio Unitario:</label>
+          <input type="number" id="venta-precio" name="precio" step="0.01" readonly>
+        </div>
+        <div class="form-group">
+          <label>Total de la Venta:</label>
+          <input type="number" id="venta-total" name="total" step="0.01" readonly>
+        </div>
+        <div class="form-group">
+          <label>Tu Comisión:</label>
+          <input type="number" id="venta-comision" name="comision" step="0.01" readonly>
+        </div>
+        <div class="form-group">
+          <label>Cliente:</label>
+          <input type="text" id="venta-cliente" name="cliente" required>
+        </div>
+        <div class="form-group">
+          <label>Notas:</label>
+          <textarea id="venta-notas" name="notas" rows="2"></textarea>
+        </div>
+        <div class="form-actions">
+          <button type="button" onclick="closeRegistrarVentaModal()" class="btn-secondary">Cancelar</button>
+          <button type="submit" class="btn-primary">Registrar Venta</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+  <script>
+    // Initialize dashboard
+    document.addEventListener('DOMContentLoaded', function() {
+      loadSocioProfile();
+      loadEmpresas();
+      loadProductosDisponibles();
+      loadClientes();
+      loadProformasSocio();
+      loadVentasSocio();
+      loadComisionesSocio();
+    });
+
+    // Handle registrar venta form
+    document.getElementById('registrar-venta-form').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const formData = new FormData(e.target);
+      const venta = Object.fromEntries(formData.entries());
+      
+      if (registrarVenta(venta)) {
+        alert('Venta registrada exitosamente');
+        closeRegistrarVentaModal();
+        loadVentasSocio();
+        loadComisionesSocio();
+      }
+    });
+
+    // Handle profile update
+    document.getElementById('socio-profile-form').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const formData = new FormData(e.target);
+      const profileData = Object.fromEntries(formData.entries());
+      
+      if (updateSocioProfile(profileData)) {
+        alert('Perfil actualizado exitosamente');
+      }
+    });
+  </script>
+</body>
+</html>

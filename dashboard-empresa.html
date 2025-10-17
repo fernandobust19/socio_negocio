@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Dashboard Empresa - Socio Negocio</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="navbar">
+    <div class="nav-brand">Socio Negocio - Panel Empresa</div>
+    <div class="nav-right">
+      <span id="empresa-name">UPCONS</span>
+      <button onclick="logout()" class="btn-logout">Cerrar Sesión</button>
+    </div>
+  </div>
+
+  <div class="dashboard-container">
+    <div class="sidebar">
+      <div class="sidebar-item active" onclick="showSection('productos')">
+        <span>📦</span> Mis Productos
+      </div>
+      <div class="sidebar-item" onclick="showSection('socios')">
+        <span>👥</span> Socios Activos
+      </div>
+      <div class="sidebar-item" onclick="showSection('proformas')">
+        <span>📋</span> Proformas Solicitadas
+      </div>
+      <div class="sidebar-item" onclick="showSection('ventas')">
+        <span>📊</span> Reportes de Ventas
+      </div>
+      <div class="sidebar-item" onclick="showSection('perfil')">
+        <span>⚙️</span> Mi Perfil
+      </div>
+    </div>
+
+    <div class="main-content">
+      <!-- Productos Section -->
+      <div id="productos-section" class="section active">
+        <div class="section-header">
+          <h2>Gestión de Productos</h2>
+          <button onclick="showAddProductModal()" class="btn-primary">+ Agregar Producto</button>
+        </div>
+        
+        <div class="products-grid" id="products-container">
+          <!-- Los productos se cargarán dinámicamente -->
+        </div>
+      </div>
+
+      <!-- Socios Section -->
+      <div id="socios-section" class="section">
+        <div class="section-header">
+          <h2>Socios Vendiendo Mis Productos</h2>
+        </div>
+        
+        <div class="table-container">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Socio</th>
+                <th>Email</th>
+                <th>Teléfono</th>
+                <th>Productos Vendidos</th>
+                <th>Comisión Total</th>
+                <th>Estado</th>
+              </tr>
+            </thead>
+            <tbody id="socios-table">
+              <!-- Los socios se cargarán dinámicamente -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Proformas Section -->
+      <div id="proformas-section" class="section">
+        <div class="section-header">
+          <h2>Proformas Solicitadas</h2>
+          <div class="filters">
+            <select id="proforma-estado-filter" onchange="filterProformas()">
+              <option value="">Todos los estados</option>
+              <option value="pendiente">Pendientes</option>
+              <option value="aprobada">Aprobadas</option>
+              <option value="rechazada">Rechazadas</option>
+            </select>
+          </div>
+        </div>
+        
+        <div class="table-container">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Fecha</th>
+                <th>Socio</th>
+                <th>Cliente</th>
+                <th>Producto</th>
+                <th>Cantidad</th>
+                <th>Total</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="proformas-empresa-table">
+              <!-- Las proformas se cargarán dinámicamente -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Ventas Section -->
+      <div id="ventas-section" class="section">
+        <div class="section-header">
+          <h2>Reportes de Ventas</h2>
+        </div>
+        
+        <div class="stats-grid">
+          <div class="stat-card">
+            <h3>Ventas del Mes</h3>
+            <p class="stat-number" id="ventas-mes">$0</p>
+          </div>
+          <div class="stat-card">
+            <h3>Productos Vendidos</h3>
+            <p class="stat-number" id="productos-vendidos">0</p>
+          </div>
+          <div class="stat-card">
+            <h3>Socios Activos</h3>
+            <p class="stat-number" id="socios-activos">0</p>
+          </div>
+          <div class="stat-card">
+            <h3>Comisiones Pagadas</h3>
+            <p class="stat-number" id="comisiones-pagadas">$0</p>
+          </div>
+        </div>
+
+        <div class="table-container">
+          <h3>Historial de Ventas</h3>
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Fecha</th>
+                <th>Producto</th>
+                <th>Socio</th>
+                <th>Cantidad</th>
+                <th>Total</th>
+                <th>Comisión</th>
+              </tr>
+            </thead>
+            <tbody id="ventas-table">
+              <!-- Las ventas se cargarán dinámicamente -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Perfil Section -->
+      <div id="perfil-section" class="section">
+        <div class="section-header">
+          <h2>Información de la Empresa</h2>
+        </div>
+        
+        <form id="empresa-profile-form" class="profile-form">
+          <div class="form-group">
+            <label>Nombre de la Empresa:</label>
+            <input type="text" id="profile-nombre" name="nombre">
+          </div>
+          <div class="form-group">
+            <label>RUC:</label>
+            <input type="text" id="profile-ruc" name="ruc">
+          </div>
+          <div class="form-group">
+            <label>Dirección:</label>
+            <input type="text" id="profile-direccion" name="direccion">
+          </div>
+          <div class="form-group">
+            <label>Teléfono:</label>
+            <input type="tel" id="profile-telefono" name="telefono">
+          </div>
+          <div class="form-group">
+            <label>Email:</label>
+            <input type="email" id="profile-email" name="email">
+          </div>
+          <div class="form-group">
+            <label>Descripción:</label>
+            <textarea id="profile-descripcion" name="descripcion" rows="4"></textarea>
+          </div>
+          <button type="submit" class="btn-primary">Actualizar Información</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal para ver detalles de proforma -->
+  <div id="proforma-details-modal" class="modal">
+    <div class="modal-content proforma-modal">
+      <span class="close" onclick="closeProformaDetailsModal()">&times;</span>
+      <h2>Detalles de Solicitud de Proforma</h2>
+      
+      <div id="proforma-info" class="proforma-info">
+        <!-- Los detalles se cargarán dinámicamente -->
+      </div>
+      
+      <div class="proforma-actions">
+        <button onclick="generarProforma()" class="btn-primary">Generar Proforma</button>
+        <button onclick="rechazarProforma()" class="btn-secondary">Rechazar Solicitud</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal para generar proforma -->
+  <div id="generar-proforma-modal" class="modal">
+    <div class="modal-content proforma-modal">
+      <span class="close" onclick="closeGenerarProformaModal()">&times;</span>
+      <h2>Generar Proforma</h2>
+      
+      <form id="generar-proforma-form">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Precio Unitario ($):</label>
+            <input type="number" id="proforma-precio" name="precio" step="0.01" required>
+          </div>
+          <div class="form-group">
+            <label>Descuento (%):</label>
+            <input type="number" id="proforma-descuento" name="descuento" min="0" max="100" value="0">
+          </div>
+        </div>
+        
+        <div class="form-row">
+          <div class="form-group">
+            <label>Tiempo de Entrega (días):</label>
+            <input type="number" id="proforma-entrega" name="tiempoEntrega" min="1" required>
+          </div>
+          <div class="form-group">
+            <label>Válida hasta:</label>
+            <input type="date" id="proforma-validez" name="validezHasta" required>
+          </div>
+        </div>
+        
+        <div class="form-group">
+          <label>Términos y Condiciones:</label>
+          <textarea id="proforma-terminos" name="terminos" rows="4" placeholder="Términos específicos para esta proforma..."></textarea>
+        </div>
+        
+        <div class="form-group">
+          <label>Notas Adicionales:</label>
+          <textarea id="proforma-notas" name="notas" rows="3" placeholder="Información adicional para el cliente..."></textarea>
+        </div>
+        
+        <div class="proforma-preview" id="proforma-preview">
+          <!-- Vista previa de la proforma se generará aquí -->
+        </div>
+        
+        <div class="form-actions">
+          <button type="button" onclick="closeGenerarProformaModal()" class="btn-secondary">Cancelar</button>
+          <button type="submit" class="btn-primary">Enviar Proforma al Socio</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal para agregar productos -->
+  <div id="add-product-modal" class="modal">
+    <div class="modal-content">
+      <span class="close" onclick="closeAddProductModal()">&times;</span>
+      <h2>Agregar Nuevo Producto</h2>
+      <form id="add-product-form">
+        <div class="form-group">
+          <label>Nombre del Producto:</label>
+          <input type="text" id="product-nombre" name="nombre" required>
+        </div>
+        <div class="form-group">
+          <label>Categoría:</label>
+          <select id="product-categoria" name="categoria" required>
+            <option value="">Seleccionar categoría</option>
+            <option value="tejas">Tejas</option>
+            <option value="materiales">Materiales de Construcción</option>
+            <option value="herramientas">Herramientas</option>
+            <option value="otros">Otros</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Precio ($):</label>
+          <input type="number" id="product-precio" name="precio" step="0.01" required>
+        </div>
+        <div class="form-group">
+          <label>Comisión para Socios (%):</label>
+          <input type="number" id="product-comision" name="comision" min="1" max="50" required>
+        </div>
+        <div class="form-group">
+          <label>Stock Disponible:</label>
+          <input type="number" id="product-stock" name="stock" required>
+        </div>
+        <div class="form-group">
+          <label>Descripción:</label>
+          <textarea id="product-descripcion" name="descripcion" rows="3"></textarea>
+        </div>
+        <div class="form-actions">
+          <button type="button" onclick="closeAddProductModal()" class="btn-secondary">Cancelar</button>
+          <button type="submit" class="btn-primary">Agregar Producto</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+  <script>
+    // Initialize dashboard
+    document.addEventListener('DOMContentLoaded', function() {
+      loadEmpresaProfile();
+      loadProducts();
+      loadSocios();
+      loadProformasEmpresa();
+      loadVentas();
+      loadStats();
+    });
+
+    // Handle add product form
+    document.getElementById('add-product-form').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const formData = new FormData(e.target);
+      const producto = Object.fromEntries(formData.entries());
+      
+      if (addProduct(producto)) {
+        alert('Producto agregado exitosamente');
+        closeAddProductModal();
+        loadProducts();
+      }
+    });
+
+    // Handle profile update
+    document.getElementById('empresa-profile-form').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const formData = new FormData(e.target);
+      const profileData = Object.fromEntries(formData.entries());
+      
+      if (updateEmpresaProfile(profileData)) {
+        alert('Perfil actualizado exitosamente');
+      }
+    });
+  </script>
+</body>
+</html>

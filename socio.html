@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Socio - Socio Negocio</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="navbar">
+    <div class="nav-brand">Socio Negocio</div>
+    <a href="index.html" class="nav-link">← Volver al inicio</a>
+  </div>
+
+  <div class="auth-container">
+    <div class="auth-card">
+      <h1>Portal Socios</h1>
+      <p class="subtitle">Únete como socio y empieza a vender productos</p>
+      
+      <div class="tab-container">
+        <button class="tab-btn active" onclick="showTab('login')">Iniciar Sesión</button>
+        <button class="tab-btn" onclick="showTab('register')">Registrarse</button>
+      </div>
+
+      <!-- Login Form -->
+      <div id="login-tab" class="tab-content active">
+        <form id="socio-login-form">
+          <div class="form-group">
+            <label for="login-email">Email:</label>
+            <input type="email" id="login-email" name="email" required>
+          </div>
+          <div class="form-group">
+            <label for="login-password">Contraseña:</label>
+            <input type="password" id="login-password" name="password" required>
+          </div>
+          <button type="submit" class="btn-primary">Iniciar Sesión</button>
+        </form>
+      </div>
+
+      <!-- Register Form -->
+      <div id="register-tab" class="tab-content">
+        <form id="socio-register-form">
+          <div class="form-group">
+            <label for="socio-nombres">Nombres:</label>
+            <input type="text" id="socio-nombres" name="nombres" required>
+          </div>
+          <div class="form-group">
+            <label for="socio-apellidos">Apellidos:</label>
+            <input type="text" id="socio-apellidos" name="apellidos" required>
+          </div>
+          <div class="form-group">
+            <label for="socio-cedula">Cédula:</label>
+            <input type="text" id="socio-cedula" name="cedula" required>
+          </div>
+          <div class="form-group">
+            <label for="socio-telefono">Teléfono:</label>
+            <input type="tel" id="socio-telefono" name="telefono" required>
+          </div>
+          <div class="form-group">
+            <label for="socio-email">Email:</label>
+            <input type="email" id="socio-email" name="email" required>
+          </div>
+          <div class="form-group">
+            <label for="socio-password">Contraseña:</label>
+            <input type="password" id="socio-password" name="password" required>
+          </div>
+          <div class="form-group">
+            <label for="socio-direccion">Dirección:</label>
+            <input type="text" id="socio-direccion" name="direccion" required>
+          </div>
+          <div class="form-group">
+            <label for="socio-experiencia">Experiencia en Ventas:</label>
+            <textarea id="socio-experiencia" name="experiencia" rows="3" placeholder="Describe tu experiencia previa en ventas (opcional)"></textarea>
+          </div>
+          <button type="submit" class="btn-primary">Registrarse como Socio</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+  <script>
+    // Handle socio login
+    document.getElementById('socio-login-form').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const email = document.getElementById('login-email').value;
+      const password = document.getElementById('login-password').value;
+      
+      if (loginSocio(email, password)) {
+        window.location.href = 'dashboard-socio.html';
+      } else {
+        alert('Email o contraseña incorrectos');
+      }
+    });
+
+    // Handle socio registration
+    document.getElementById('socio-register-form').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const formData = new FormData(e.target);
+      const socio = Object.fromEntries(formData.entries());
+      
+      if (registerSocio(socio)) {
+        alert('Socio registrado exitosamente');
+        window.location.href = 'dashboard-socio.html';
+      } else {
+        alert('Error al registrar socio. Verifique los datos.');
+      }
+    });
+  </script>
+</body>
+</html>
