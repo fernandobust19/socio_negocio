@@ -1,4 +1,7 @@
 // Global variables
+// En desarrollo, el servidor se ejecuta en localhost:3000. 
+// En producción (Render), usaremos una ruta relativa y una regla de reescritura.
+const apiUrl = ''; // Se deja vacío para usar rutas relativas, ej: /api/register/empresa
 let currentUser = null;
 let userType = null; // 'empresa' or 'socio'
 
@@ -250,6 +253,8 @@ function loadProducts() {
       <p class="commission">Comisión: ${producto.comision}%</p>
       <p class="stock">Stock: ${producto.stock} unidades</p>
       <p>${producto.descripcion}</p>
+      ${producto.colorCapuchon ? `<p><strong>Color capuchón:</strong> ${producto.colorCapuchon}</p>` : ''}
+      ${producto.colorCapuchon ? `<p><strong>Color capuchón:</strong> ${producto.colorCapuchon}</p>` : ''}
       <div style="margin-top: 1rem;">
         <button class="btn-action btn-edit" onclick="editProduct(${producto.id})">Editar</button>
         <button class="btn-action btn-delete" onclick="deleteProduct(${producto.id})">Eliminar</button>
@@ -477,6 +482,7 @@ function seleccionarProducto(productoId) {
 function filterProducts() {
   const empresaFilter = document.getElementById('empresa-filter').value;
   const categoriaFilter = document.getElementById('categoria-filter').value;
+  const searchText = (document.getElementById('search-filter')?.value || '').toLowerCase();
   
   const productos = JSON.parse(localStorage.getItem('productos') || '[]');
   const empresas = JSON.parse(localStorage.getItem('empresas') || '[]');
@@ -489,6 +495,15 @@ function filterProducts() {
   
   if (categoriaFilter) {
     filteredProductos = filteredProductos.filter(p => p.categoria === categoriaFilter);
+  }
+  
+  if (searchText) {
+    filteredProductos = filteredProductos.filter(p => {
+      const nombre = (p.nombre || '').toLowerCase();
+      const descripcion = (p.descripcion || '').toLowerCase();
+      const color = (p.colorCapuchon || '').toLowerCase();
+      return nombre.includes(searchText) || descripcion.includes(searchText) || color.includes(searchText);
+    });
   }
   
   const container = document.getElementById('productos-disponibles');
@@ -512,6 +527,113 @@ function filterProducts() {
     `;
     container.appendChild(productCard);
   });
+}
+
+// Helper to filter by empresa programatically
+function filterProductsByEmpresa(empresaId) {
+  const sel = document.getElementById('empresa-filter');
+  if (sel) {
+    sel.value = String(empresaId || '');
+    filterProducts();
+  }
+}
+
+// CSV import for catálogo (empresa dashboard)
+function importCatalogoDesdeCSV(file) {
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const text = e.target.result;
+      const rows = parseCSV(text);
+      if (!rows || rows.length === 0) {
+        alert('El archivo CSV no contiene datos.');
+        return;
+      }
+      // Normalizamos encabezados
+      const normalizeKey = k => (k || '').toString().trim().toLowerCase();
+      const mapRowToProduct = (row, index) => {
+        const r = {};
+        // Copia con claves normalizadas
+        Object.keys(row).forEach(k => { r[normalizeKey(k)] = row[k]; });
+        const producto = {
+          id: 0, // se recalcula
+          empresaId: currentUser?.id || 1,
+          nombre: r['nombre'] || r['producto'] || '',
+          categoria: r['categoria'] || r['categoría'] || 'otros',
+          precio: parseFloat(r['precio'] || r['precio_unitario'] || r['precio unitario'] || 0) || 0,
+          comision: parseFloat(r['comision'] || r['comisión'] || 0) || 0,
+          stock: parseInt(r['stock'] || r['inventario'] || 0) || 0,
+          descripcion: r['descripcion'] || r['descripción'] || r['detalle'] || '',
+          colorCapuchon: r['colorcapuchon'] || r['color_capuchon'] || r['color capuchon'] || r['color'] || ''
+        };
+        // Solo filas con nombre
+        if (!producto.nombre) return null;
+        return producto;
+      };
+
+      const productosImportados = rows.map(mapRowToProduct).filter(Boolean);
+      if (productosImportados.length === 0) {
+        alert('No se encontraron productos válidos en el CSV.');
+        return;
+      }
+
+      // Reemplazar productos de esta empresa por los importados
+      const existentes = JSON.parse(localStorage.getItem('productos') || '[]');
+      const restantes = existentes.filter(p => p.empresaId !== (currentUser?.id || 1));
+      // Asignar IDs consecutivos a nivel global
+      let nextId = 1;
+      const reindexed = [...restantes, ...productosImportados].map(p => ({ ...p, id: nextId++ }));
+      localStorage.setItem('productos', JSON.stringify(reindexed));
+      alert(`Catálogo importado: ${productosImportados.length} productos.`);
+      // Recargar vistas relevantes
+      loadProducts?.();
+      loadProductosDisponibles?.();
+    } catch (err) {
+      console.error(err);
+      alert('Error al procesar el CSV. Verifique el formato.');
+    }
+  };
+  reader.readAsText(file, 'utf-8');
+}
+
+// CSV parser sencillo (maneja comillas y separadores básicos)
+function parseCSV(text) {
+  const lines = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n').filter(l => l.trim().length > 0);
+  if (lines.length === 0) return [];
+  const headers = splitCSVLine(lines[0]).map(h => h.trim());
+  const rows = [];
+  for (let i = 1; i < lines.length; i++) {
+    const cols = splitCSVLine(lines[i]);
+    const obj = {};
+    headers.forEach((h, idx) => obj[h] = cols[idx] !== undefined ? cols[idx] : '');
+    rows.push(obj);
+  }
+  return rows;
+}
+
+function splitCSVLine(line) {
+  const result = [];
+  let current = '';
+  let inQuotes = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (ch === '"') {
+      if (inQuotes && line[i + 1] === '"') { // escaped quote
+        current += '"';
+        i++;
+      } else {
+        inQuotes = !inQuotes;
+      }
+    } else if (ch === ',' && !inQuotes) {
+      result.push(current);
+      current = '';
+    } else {
+      current += ch;
+    }
+  }
+  result.push(current);
+  return result.map(v => v.trim());
 }
 
 function loadEmpresasForVenta() {
@@ -1454,6 +1576,22 @@ document.addEventListener('DOMContentLoaded', function() {
     clienteSelect.addEventListener('change', function() {
       if (this.value) {
         mostrarInfoCliente(this.value);
+      } else {
+        document.getElementById('cliente-info-preview').innerHTML = '';
+      }
+    });
+  }
+  
+  // Close modals when clicking outside
+  window.onclick = function(event) {
+    const modals = document.querySelectorAll('.modal');
+    modals.forEach(modal => {
+      if (event.target === modal) {
+        modal.style.display = 'none';
+      }
+    });
+  };
+});trarInfoCliente(this.value);
       } else {
         document.getElementById('cliente-info-preview').innerHTML = '';
       }

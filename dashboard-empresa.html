@@ -40,6 +40,8 @@
         <div class="section-header">
           <h2>Gestión de Productos</h2>
           <button onclick="showAddProductModal()" class="btn-primary">+ Agregar Producto</button>
+          <button onclick="document.getElementById('catalogo-csv-input').click()" class="btn-secondary">Importar Catálogo (CSV)</button>
+          <input type="file" id="catalogo-csv-input" accept=".csv" style="display:none;" />
         </div>
         
         <div class="products-grid" id="products-container">
@@ -311,6 +313,15 @@
       loadProformasEmpresa();
       loadVentas();
       loadStats();
+      const csvInput = document.getElementById('catalogo-csv-input');
+      if (csvInput) {
+        csvInput.addEventListener('change', function(){
+          if (this.files && this.files[0]) {
+            importCatalogoDesdeCSV(this.files[0]);
+            this.value = '';
+          }
+        });
+      }
     });
 
     // Handle add product form

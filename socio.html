@@ -94,17 +94,16 @@
     });
 
     // Handle socio registration
-    document.getElementById('socio-register-form').addEventListener('submit', function(e) {
+    document.getElementById('socio-register-form').addEventListener('submit', async function(e) {
       e.preventDefault();
       const formData = new FormData(e.target);
       const socio = Object.fromEntries(formData.entries());
       
-      if (registerSocio(socio)) {
-        alert('Socio registrado exitosamente');
+      if (await registerSocio(socio)) {
+        // The success alert is now handled inside registerSocio
         window.location.href = 'dashboard-socio.html';
-      } else {
-        alert('Error al registrar socio. Verifique los datos.');
       }
+      // The error alert is also handled inside registerSocio
     });
   </script>
 </body>

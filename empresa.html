@@ -95,36 +95,35 @@
     });
 
     // Handle empresa registration
-    document.getElementById('empresa-register-form').addEventListener('submit', function(e) {
+    document.getElementById('empresa-register-form').addEventListener('submit', async function(e) {
       e.preventDefault();
       const formData = new FormData(e.target);
-      
-      // Handle logo file
+      const empresa = Object.fromEntries(formData.entries());
       const logoFile = formData.get('logo');
+
       if (logoFile && logoFile.size > 0) {
-        const reader = new FileReader();
-        reader.onload = function(event) {
-          const empresa = Object.fromEntries(formData.entries());
-          empresa.logo = event.target.result; // Base64 string
-          
-          if (registerEmpresa(empresa)) {
-            alert('Empresa registrada exitosamente');
-            window.location.href = 'dashboard-empresa.html';
-          } else {
-            alert('Error al registrar empresa. Verifique los datos.');
-          }
-        };
-        reader.readAsDataURL(logoFile);
-      } else {
-        const empresa = Object.fromEntries(formData.entries());
-        
-        if (registerEmpresa(empresa)) {
-          alert('Empresa registrada exitosamente');
-          window.location.href = 'dashboard-empresa.html';
-        } else {
-          alert('Error al registrar empresa. Verifique los datos.');
+        try {
+            const logoBase64 = await new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = (event) => resolve(event.target.result);
+                reader.onerror = (error) => reject(error);
+                reader.readAsDataURL(logoFile);
+            });
+            empresa.logo = logoBase64;
+        } catch (error) {
+            console.error('Error reading file:', error);
+            alert('Hubo un error al cargar el logo.');
+            return;
         }
+      } else {
+        empresa.logo = null;
       }
+
+      if (await registerEmpresa(empresa)) {
+        // The success alert is now handled inside registerEmpresa
+        window.location.href = 'dashboard-empresa.html';
+      }
+      // The error alert is also handled inside registerEmpresa
     });
   </script>
 </body>
