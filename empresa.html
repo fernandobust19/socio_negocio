@@ -82,12 +82,13 @@
   <script src="script.js"></script>
   <script>
     // Handle empresa login
-    document.getElementById('empresa-login-form').addEventListener('submit', function(e) {
+    document.getElementById('empresa-login-form').addEventListener('submit', async function(e) {
       e.preventDefault();
       const email = document.getElementById('login-email').value;
       const password = document.getElementById('login-password').value;
       
-      if (loginEmpresa(email, password)) {
+      const success = await loginEmpresa(email, password);
+      if (success) {
         window.location.href = 'dashboard-empresa.html';
       } else {
         alert('Email o contraseña incorrectos');
@@ -119,9 +120,13 @@
         empresa.logo = null;
       }
 
-      if (await registerEmpresa(empresa)) {
-        // The success alert is now handled inside registerEmpresa
-        window.location.href = 'dashboard-empresa.html';
+      const success = await registerEmpresa(empresa);
+      if (success) {
+        // The success alert is handled inside registerEmpresa.
+        // Now, we switch to the login tab so the user can log in.
+        showTab('login');
+        // Optional: Clear the registration form
+        e.target.reset();
       }
       // The error alert is also handled inside registerEmpresa
     });

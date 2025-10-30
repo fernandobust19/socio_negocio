@@ -81,12 +81,13 @@
   <script src="script.js"></script>
   <script>
     // Handle socio login
-    document.getElementById('socio-login-form').addEventListener('submit', function(e) {
+    document.getElementById('socio-login-form').addEventListener('submit', async function(e) {
       e.preventDefault();
       const email = document.getElementById('login-email').value;
       const password = document.getElementById('login-password').value;
       
-      if (loginSocio(email, password)) {
+      const success = await loginSocio(email, password);
+      if (success) {
         window.location.href = 'dashboard-socio.html';
       } else {
         alert('Email o contraseña incorrectos');
@@ -99,9 +100,13 @@
       const formData = new FormData(e.target);
       const socio = Object.fromEntries(formData.entries());
       
-      if (await registerSocio(socio)) {
-        // The success alert is now handled inside registerSocio
-        window.location.href = 'dashboard-socio.html';
+      const success = await registerSocio(socio);
+      if (success) {
+        // The success alert is handled inside registerSocio.
+        // Now, we switch to the login tab so the user can log in.
+        showTab('login');
+        // Optional: Clear the registration form
+        e.target.reset();
       }
       // The error alert is also handled inside registerSocio
     });

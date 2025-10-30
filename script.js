@@ -1,7 +1,7 @@
 // Global variables
 // En desarrollo, el servidor se ejecuta en localhost:3000. 
 // En producción (Render), usaremos una ruta relativa y una regla de reescritura.
-const apiUrl = ''; // Se deja vacío para usar rutas relativas, ej: /api/register/empresa
+const apiUrl = 'https://socio-negocio.onrender.com';
 let currentUser = null;
 let userType = null; // 'empresa' or 'socio'
 
@@ -79,90 +79,129 @@ function initializeData() {
 }
 
 // Authentication functions
-function registerEmpresa(empresaData) {
-  const empresas = JSON.parse(localStorage.getItem('empresas') || '[]');
-  
-  // Check if email already exists
-  if (empresas.some(e => e.email === empresaData.email)) {
-    alert('Ya existe una empresa registrada con este email');
+async function registerEmpresa(empresaData) {
+  try {
+    const response = await fetch(`${apiUrl}/api/register/empresa`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(empresaData),
+    });
+
+    if (!response.ok) {
+      // Try to get error message from server response
+      const errorData = await response.json().catch(() => ({}));
+      alert(`Error al registrar la empresa: ${errorData.message || response.statusText}`);
+      return false;
+    }
+
+    const result = await response.json();
+    console.log(result.message); // "Empresa registrada exitosamente (simulación)"
+
+    // NOTE: The original function performed an auto-login.
+    // This is not secure. After registration, the user should be
+    // redirected to the login page to log in with their new credentials.
+    // For now, we will just show a success message.
+    alert('¡Empresa registrada exitosamente! Por favor, inicia sesión.');
+
+    // We won't auto-login here. The login function will need to be updated next.
+    // The old auto-login logic is removed.
+
+    return true;
+  } catch (error) {
+    console.error('Error en registerEmpresa:', error);
+    alert('Ocurrió un error de red. Por favor, intenta de nuevo.');
     return false;
   }
-  
-  const newEmpresa = {
-    id: empresas.length + 1,
-    ...empresaData,
-    fechaRegistro: new Date().toISOString()
-  };
-  
-  empresas.push(newEmpresa);
-  localStorage.setItem('empresas', JSON.stringify(empresas));
-  
-  // Auto login
-  currentUser = newEmpresa;
-  userType = 'empresa';
-  localStorage.setItem('currentUser', JSON.stringify(currentUser));
-  localStorage.setItem('userType', userType);
-  
-  return true;
 }
 
-function registerSocio(socioData) {
-  const socios = JSON.parse(localStorage.getItem('socios') || '[]');
-  
-  // Check if email already exists
-  if (socios.some(s => s.email === socioData.email)) {
-    alert('Ya existe un socio registrado con este email');
+async function registerSocio(socioData) {
+  try {
+    const response = await fetch(`${apiUrl}/api/register/socio`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(socioData),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      alert(`Error al registrar el socio: ${errorData.message || response.statusText}`);
+      return false;
+    }
+
+    const result = await response.json();
+    console.log(result.message); // "Socio registrado exitosamente (simulación)"
+
+    alert('¡Socio registrado exitosamente! Por favor, inicia sesión.');
+    
+    return true;
+  } catch (error) {
+    console.error('Error en registerSocio:', error);
+    alert('Ocurrió un error de red. Por favor, intenta de nuevo.');
     return false;
   }
-  
-  const newSocio = {
-    id: socios.length + 1,
-    ...socioData,
-    fechaRegistro: new Date().toISOString(),
-    ventasRealizadas: 0,
-    comisionesGeneradas: 0
-  };
-  
-  socios.push(newSocio);
-  localStorage.setItem('socios', JSON.stringify(socios));
-  
-  // Auto login
-  currentUser = newSocio;
-  userType = 'socio';
-  localStorage.setItem('currentUser', JSON.stringify(currentUser));
-  localStorage.setItem('userType', userType);
-  
-  return true;
 }
 
-function loginEmpresa(email, password) {
-  const empresas = JSON.parse(localStorage.getItem('empresas') || '[]');
-  const empresa = empresas.find(e => e.email === email && e.password === password);
-  
-  if (empresa) {
-    currentUser = empresa;
+async function loginEmpresa(email, password) {
+  try {
+    const response = await fetch(`${apiUrl}/api/login/empresa`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ email, password }),
+    });
+
+    if (!response.ok) {
+      return false; // The calling code handles the alert for incorrect login
+    }
+
+    const { token, user } = await response.json();
+
+    // Store user info and token in localStorage to manage session
+    currentUser = user;
     userType = 'empresa';
-    localStorage.setItem('currentUser', JSON.stringify(currentUser));
-    localStorage.setItem('userType', userType);
+    localStorage.setItem('currentUser', JSON.stringify(user));
+    localStorage.setItem('userType', 'empresa');
+    localStorage.setItem('token', token); // Store the token
+
     return true;
+  } catch (error) {
+    console.error('Error en loginEmpresa:', error);
+    return false;
   }
-  
-  return false;
 }
 
-function loginSocio(email, password) {
-  const socios = JSON.parse(localStorage.getItem('socios') || '[]');
-  const socio = socios.find(s => s.email === email && s.password === password);
-  
-  if (socio) {
-    currentUser = socio;
+async function loginSocio(email, password) {
+  try {
+    const response = await fetch(`${apiUrl}/api/login/socio`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ email, password }),
+    });
+
+    if (!response.ok) {
+      return false;
+    }
+
+    const { token, user } = await response.json();
+
+    currentUser = user;
     userType = 'socio';
-    localStorage.setItem('currentUser', JSON.stringify(currentUser));
-    localStorage.setItem('userType', userType);
+    localStorage.setItem('currentUser', JSON.stringify(user));
+    localStorage.setItem('userType', 'socio');
+    localStorage.setItem('token', token);
+
     return true;
+  } catch (error) {
+    console.error('Error en loginSocio:', error);
+    return false;
   }
-  
-  return false;
 }
 
 function logout() {
