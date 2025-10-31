@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const { Pool } = require('pg');
+const path = require('path');
 
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
@@ -11,6 +12,7 @@ const port = process.env.PORT || 3000;
 // Middlewares
 app.use(cors());
 app.use(express.json());
+app.use(express.static(path.join(__dirname, '..')));
 
 // --- Configuración de la Base de Datos (PostgreSQL) ---
 // Render inyectará la URL de la base de datos en esta variable de entorno.
@@ -39,9 +41,7 @@ app.get('/test-db', async (req, res) => {
 
 // --- Rutas de la API ---
 
-app.get('/', (req, res) => {
-  res.send('Backend de Socio Negocio funcionando!');
-});
+
 
 // Ruta para registrar una nueva empresa
 app.post('/api/register/empresa', async (req, res) => {
