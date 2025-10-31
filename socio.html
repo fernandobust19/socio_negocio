@@ -28,11 +28,11 @@
         <form id="socio-login-form">
           <div class="form-group">
             <label for="login-email">Email:</label>
-            <input type="email" id="login-email" name="email" required>
+            <input type="email" id="login-email" name="email" autocomplete="username" required>
           </div>
           <div class="form-group">
             <label for="login-password">Contraseña:</label>
-            <input type="password" id="login-password" name="password" required>
+            <input type="password" id="login-password" name="password" autocomplete="current-password" required>
           </div>
           <button type="submit" class="btn-primary">Iniciar Sesión</button>
         </form>
@@ -51,19 +51,19 @@
           </div>
           <div class="form-group">
             <label for="socio-cedula">Cédula:</label>
-            <input type="text" id="socio-cedula" name="cedula" required>
+            <input type="text" id="socio-cedula" name="cedula" pattern="\\d{8,13}" title="Ingrese 8 a 13 dígitos" required>
           </div>
           <div class="form-group">
             <label for="socio-telefono">Teléfono:</label>
-            <input type="tel" id="socio-telefono" name="telefono" required>
+            <input type="tel" id="socio-telefono" name="telefono" inputmode="tel" pattern="[0-9+\-\s]{7,20}" title="Entre 7 y 20 caracteres: números, espacio, + o -" required>
           </div>
           <div class="form-group">
             <label for="socio-email">Email:</label>
-            <input type="email" id="socio-email" name="email" required>
+            <input type="email" id="socio-email" name="email" autocomplete="email" required>
           </div>
           <div class="form-group">
             <label for="socio-password">Contraseña:</label>
-            <input type="password" id="socio-password" name="password" required>
+            <input type="password" id="socio-password" name="password" autocomplete="new-password" minlength="6" required>
           </div>
           <div class="form-group">
             <label for="socio-direccion">Dirección:</label>

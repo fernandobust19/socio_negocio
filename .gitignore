@@ -1,0 +1,34 @@
+# Dependencias de Node
+node_modules/
+server/node_modules/
+
+# Entornos / secretos
+.env
+.env.local
+.env.*.local
+server/.env
+
+# Archivos generados / logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Sistema operativo / IDE
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Builds temporales
+dist/
+build/
+.tmp/
+
+# Subidas (logos, etc.)
+server/public/uploads/
+server/public/uploads/**
+!server/public/uploads/.gitkeep
+

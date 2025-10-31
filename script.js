@@ -9,6 +9,25 @@ let userType = null; // 'empresa' or 'socio'
 
 
 
+// Helpers
+async function apiFetch(path, options = {}) {
+  const token = localStorage.getItem('token');
+  const headers = Object.assign(
+    { 'Content-Type': 'application/json' },
+    options.headers || {}
+  );
+  if (token && !headers['Authorization']) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+  const resp = await fetch(`${apiUrl}${path}`, { ...options, headers });
+  if (resp.status === 401) {
+    alert('Tu sesión ha expirado. Por favor, inicia sesión nuevamente.');
+    logout();
+    return resp; // caller may handle if needed
+  }
+  return resp;
+}
+
 // Authentication functions
 async function registerEmpresa(empresaData) {
   try {
@@ -155,6 +174,7 @@ function logout() {
   userType = null;
   localStorage.removeItem('currentUser');
   localStorage.removeItem('userType');
+  localStorage.removeItem('token');
   window.location.href = 'index.html';
 }
 
@@ -209,13 +229,8 @@ function showSection(sectionName) {
 // Product management
 async function addProduct(productData) {
   try {
-    const token = localStorage.getItem('token');
-    const response = await fetch(`${apiUrl}/api/products`, {
+    const response = await apiFetch(`/api/products`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
       body: JSON.stringify(productData),
     });
 
@@ -244,12 +259,7 @@ async function loadProducts() {
   if (!currentUser || userType !== 'empresa') return;
 
   try {
-    const token = localStorage.getItem('token');
-    const response = await fetch(`${apiUrl}/api/products`, {
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
-    });
+    const response = await apiFetch(`/api/products`, { method: 'GET' });
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
@@ -1733,13 +1743,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const productId = producto.id;
 
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${apiUrl}/api/products/${productId}`, {
+      const response = await apiFetch(`/api/products/${productId}`, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
         body: JSON.stringify(producto),
       });
 

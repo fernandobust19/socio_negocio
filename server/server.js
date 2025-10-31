@@ -5,6 +5,12 @@ const path = require('path');
 const fs = require('fs');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+// Cargar variables de entorno en desarrollo/local
+try {
+  require('dotenv').config({ path: path.join(__dirname, '.env') });
+} catch (_) {
+  // Si dotenv no está instalado en producción, ignorar silenciosamente
+}
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -158,21 +164,40 @@ function saveDataUrlToFile(dataUrl, subfolder) {
 // Registro empresa
 app.post('/api/register/empresa', async (req, res) => {
   const { nombre, ruc, direccion, telefono, email, password, descripcion, logo } = req.body;
-  if (!nombre || !email || !password) return res.status(400).json({ message: 'Faltan campos obligatorios.' });
+
+  // Validación de campos obligatorios y tipos
+  if (!nombre || typeof nombre !== 'string' || !email || typeof email !== 'string' || !password || typeof password !== 'string') {
+    return res.status(400).json({ message: 'Faltan campos obligatorios o formato incorrecto.' });
+  }
+  // Validación de email simple
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return res.status(400).json({ message: 'Email inválido.' });
+  }
+  // Validación de longitud mínima de contraseña
+  if (password.length < 6) {
+    return res.status(400).json({ message: 'La contraseña debe tener al menos 6 caracteres.' });
+  }
+
   try {
+    const t = (v) => typeof v === 'string' ? v.trim() : v;
     const password_hash = await bcrypt.hash(password, 10);
     let logo_url = null;
     if (logo && typeof logo === 'string' && logo.startsWith('data:')) {
       logo_url = saveDataUrlToFile(logo, 'uploads/logos');
+      if (!logo_url) {
+        return res.status(400).json({ message: 'El logo no pudo guardarse. Verifica el formato.' });
+      }
     }
     const { rows } = await pool.query(
       `INSERT INTO empresas (nombre, ruc, direccion, telefono, email, password_hash, descripcion, logo_url)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING id, nombre, email, logo_url;`,
-      [nombre, ruc, direccion, telefono, email, password_hash, descripcion, logo_url]
+      [t(nombre), t(ruc), t(direccion), t(telefono), t(email), password_hash, t(descripcion), logo_url]
     );
     res.status(201).json({ message: 'Empresa registrada exitosamente', user: rows[0] });
   } catch (err) {
     if (err.code === '23505') return res.status(409).json({ message: 'El email ya está registrado.' });
+    if (err.code === '22P02') return res.status(400).json({ message: 'Formato de datos inválido.' });
+    console.error('Error registro empresa:', err);
     res.status(500).json({ message: 'Error interno del servidor.' });
   }
 });
@@ -181,12 +206,20 @@ app.post('/api/register/empresa', async (req, res) => {
 app.post('/api/register/socio', async (req, res) => {
   const { nombres, apellidos, cedula, telefono, email, password, direccion, experiencia } = req.body;
   if (!nombres || !apellidos || !cedula || !telefono || !email || !password) return res.status(400).json({ message: 'Faltan campos obligatorios.' });
+  // Validaciones adicionales
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return res.status(400).json({ message: 'Email inválido.' });
+  }
+  if (typeof password !== 'string' || password.length < 6) {
+    return res.status(400).json({ message: 'La contraseña debe tener al menos 6 caracteres.' });
+  }
   try {
+    const t = (v) => typeof v === 'string' ? v.trim() : v;
     const password_hash = await bcrypt.hash(password, 10);
     const { rows } = await pool.query(
       `INSERT INTO socios (nombres, apellidos, cedula, telefono, email, password_hash, direccion, experiencia)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING id, nombres, email;`,
-      [nombres, apellidos, cedula, telefono, email, password_hash, direccion, experiencia]
+      [t(nombres), t(apellidos), t(cedula), t(telefono), t(email), password_hash, t(direccion), t(experiencia)]
     );
     res.status(201).json({ message: 'Socio registrado exitosamente', user: rows[0] });
   } catch (err) {
@@ -518,8 +551,33 @@ app.put('/api/socios/profile', authenticateToken, async (req, res) => {
   }
 });
 
+// Healthcheck sencillo para verificar la BD y tablas clave
+app.get('/api/health', async (req, res) => {
+  try {
+    const client = await pool.connect();
+    try {
+      const checks = {};
+      // Comprobar conexión
+      const { rows: ping } = await client.query('SELECT NOW() as now');
+      checks.db_now = ping[0].now;
+      // Comprobar tablas mínimas
+      await client.query('SELECT 1 FROM empresas LIMIT 1');
+      await client.query('SELECT 1 FROM socios LIMIT 1');
+      await client.query('SELECT 1 FROM productos LIMIT 1');
+      checks.tables = 'ok';
+      return res.status(200).json({ status: 'ok', ...checks });
+    } finally {
+      client.release();
+    }
+  } catch (err) {
+    // Si falta una tabla, Postgres devuelve 42P01
+    const code = err && err.code ? err.code : undefined;
+    const msg = code === '42P01' ? 'Falta alguna tabla. Ejecuta migraciones.' : (err && err.message ? err.message : 'Error desconocido');
+    return res.status(500).json({ status: 'error', code, message: msg });
+  }
+});
+
 // Iniciar servidor
 app.listen(port, () => {
   console.log(`Servidor escuchando en http://localhost:${port}`);
 });
-
