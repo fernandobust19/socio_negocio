@@ -90,6 +90,21 @@ async function registerEmpresa(empresaData) {
     });
 
     if (!response.ok) {
+      if (response.status === 413 && empresaData && empresaData.logo) {
+        // Reintentar automáticamente sin logo si el servidor rechaza por tamaño
+        const retryData = { ...empresaData };
+        delete retryData.logo;
+        const retryResp = await fetch(`${apiUrl}/api/register/empresa`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(retryData),
+        });
+        if (retryResp.ok) {
+          const okRes = await retryResp.json();
+          alert('Empresa registrada exitosamente (sin logo por tamaño).');
+          return true;
+        }
+      }
       // Try to get error message from server response
       const errorData = await response.json().catch(() => ({}));
       alert(`Error al registrar la empresa: ${errorData.message || response.statusText}`);

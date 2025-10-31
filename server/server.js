@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const { Pool } = require('pg');
 const path = require('path');
+const fs = require('fs');
 
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
@@ -11,8 +12,44 @@ const port = process.env.PORT || 3000;
 
 // Middlewares
 app.use(cors());
-app.use(express.json());
+// Aumentar el límite del body para permitir logos en base64 (hasta 10MB)
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ limit: '10mb', extended: true }));
 app.use(express.static(path.join(__dirname, '..')));
+// Serve backend public assets under /public
+app.use('/public', express.static(path.join(__dirname, 'public')));
+
+// Ensure required DB columns exist (lightweight migration)
+(async () => {
+  try {
+    await pool.query('ALTER TABLE empresas ADD COLUMN IF NOT EXISTS logo_url TEXT');
+  } catch (e) {
+    console.warn('Could not ensure empresas.logo_url column:', e.message);
+  }
+})();
+
+// Save Data URL (base64) to disk and return public URL
+function saveDataUrlToFile(dataUrl, subfolder) {
+  try {
+    const match = /^data:(.+);base64,(.+)$/.exec(dataUrl || '');
+    if (!match) return null;
+    const mime = match[1];
+    const b64 = match[2];
+    const buf = Buffer.from(b64, 'base64');
+    const extMap = { 'image/png': 'png', 'image/jpeg': 'jpg', 'image/jpg': 'jpg', 'image/gif': 'gif', 'image/webp': 'webp' };
+    const ext = extMap[mime] || 'bin';
+    const dir = path.join(__dirname, 'public', subfolder);
+    fs.mkdirSync(dir, { recursive: true });
+    const filename = `logo_${Date.now()}_${Math.floor(Math.random()*1e6)}.${ext}`;
+    const fullPath = path.join(dir, filename);
+    fs.writeFileSync(fullPath, buf);
+    const subfolderNormalized = subfolder.replace(/\\/g, '/');
+    return `/public/${subfolderNormalized}/${filename}`;
+  } catch (e) {
+    console.error('Error saving Data URL:', e);
+    return null;
+  }
+}
 
 // --- Configuración de la Base de Datos (PostgreSQL) ---
 // Render inyectará la URL de la base de datos en esta variable de entorno.
@@ -45,20 +82,26 @@ app.get('/test-db', async (req, res) => {
 
 // Ruta para registrar una nueva empresa
 app.post('/api/register/empresa', async (req, res) => {
-  const { nombre, ruc, direccion, telefono, email, password, descripcion } = req.body;
+  const { nombre, ruc, direccion, telefono, email, password, descripcion, logo } = req.body;
 
   try {
     // Hash the password
     const saltRounds = 10;
     const password_hash = await bcrypt.hash(password, saltRounds);
 
+    // Save logo if provided
+    let logo_url = null;
+    if (logo && typeof logo === 'string' && logo.startsWith('data:')) {
+      logo_url = saveDataUrlToFile(logo, 'uploads/logos');
+    }
+
     // Save to database
     const query = `
-      INSERT INTO empresas (nombre, ruc, direccion, telefono, email, password_hash, descripcion)
-      VALUES ($1, $2, $3, $4, $5, $6, $7)
-      RETURNING id, nombre, email;
+      INSERT INTO empresas (nombre, ruc, direccion, telefono, email, password_hash, descripcion, logo_url)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      RETURNING id, nombre, email, logo_url;
     `;
-    const values = [nombre, ruc, direccion, telefono, email, password_hash, descripcion];
+    const values = [nombre, ruc, direccion, telefono, email, password_hash, descripcion, logo_url];
 
     const { rows } = await pool.query(query, values);
     const newUser = rows[0];

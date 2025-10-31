@@ -104,18 +104,83 @@
       const logoFile = formData.get('logo');
 
       if (logoFile && logoFile.size > 0) {
+        // Validar tamaño máximo 2MB en origen
+        const maxSize = 2 * 1024 * 1024; // 2MB
+        if (logoFile.size > maxSize) {
+          alert('El logo excede el tamaño máximo de 2MB. Por favor, sube un archivo más pequeño.');
+          return;
+        }
+
+        // Comprimir el logo para evitar 413 en servidores con límite bajo (p.ej. 100KB)
+        async function compressImageToTarget(file, targetBytes) {
+          const readAsDataURL = (f) => new Promise((resolve, reject) => {
+            const r = new FileReader();
+            r.onload = () => resolve(r.result);
+            r.onerror = reject;
+            r.readAsDataURL(f);
+          });
+          const dataUrl = await readAsDataURL(file);
+          const img = await new Promise((resolve, reject) => {
+            const image = new Image();
+            image.onload = () => resolve(image);
+            image.onerror = reject;
+            image.src = dataUrl;
+          });
+
+          let width = img.naturalWidth;
+          let height = img.naturalHeight;
+          let quality = 0.7;
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+
+          function renderAndSize() {
+            canvas.width = width;
+            canvas.height = height;
+            ctx.clearRect(0, 0, width, height);
+            ctx.drawImage(img, 0, 0, width, height);
+            const out = canvas.toDataURL('image/jpeg', quality);
+            const b64 = out.split(',')[1] || '';
+            const bytes = Math.ceil((b64.length * 3) / 4);
+            return { out, bytes };
+          }
+
+          // Primer render con tamaño máximo 800px
+          const maxDim = 800;
+          if (width > height && width > maxDim) {
+            height = Math.round((height * maxDim) / width);
+            width = maxDim;
+          } else if (height > maxDim) {
+            width = Math.round((width * maxDim) / height);
+            height = maxDim;
+          }
+
+          let { out, bytes } = renderAndSize();
+          let attempts = 0;
+          while (bytes > targetBytes && attempts < 5) {
+            // Reducir calidad y dimensiones progresivamente
+            quality = Math.max(0.4, quality - 0.1);
+            width = Math.max(320, Math.round(width * 0.85));
+            height = Math.max(320, Math.round(height * 0.85));
+            ({ out, bytes } = renderAndSize());
+            attempts++;
+          }
+          return bytes <= targetBytes ? out : null;
+        }
+
         try {
-            const logoBase64 = await new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.onload = (event) => resolve(event.target.result);
-                reader.onerror = (error) => reject(error);
-                reader.readAsDataURL(logoFile);
-            });
-            empresa.logo = logoBase64;
+          // Intentar dejarlo por debajo de ~90KB
+          const compressed = await compressImageToTarget(logoFile, 90 * 1024);
+          if (compressed) {
+            empresa.logo = compressed;
+          } else {
+            // Si no se puede comprimir lo suficiente, enviar sin logo
+            empresa.logo = null;
+            alert('El logo es demasiado grande incluso tras comprimir. Se registrará sin logo.');
+          }
         } catch (error) {
-            console.error('Error reading file:', error);
-            alert('Hubo un error al cargar el logo.');
-            return;
+          console.error('Error al comprimir el logo:', error);
+          alert('Hubo un error al procesar el logo. Se registrará sin logo.');
+          empresa.logo = null;
         }
       } else {
         empresa.logo = null;
