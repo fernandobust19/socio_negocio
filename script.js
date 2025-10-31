@@ -1724,10 +1724,12 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   // Handle edit product form
-  document.getElementById('edit-product-form').addEventListener('submit', async function(e) {
-    e.preventDefault();
-    const formData = new FormData(e.target);
-    const producto = Object.fromEntries(formData.entries());
+  const editProductForm = document.getElementById('edit-product-form');
+  if (editProductForm) {
+    editProductForm.addEventListener('submit', async function(e) {
+      e.preventDefault();
+      const formData = new FormData(e.target);
+      const producto = Object.fromEntries(formData.entries());
     const productId = producto.id;
 
     try {
@@ -1756,6 +1758,7 @@ document.addEventListener('DOMContentLoaded', function() {
       alert('Ocurrió un error de red. Por favor, intenta de nuevo.');
     }
   });
+  }
   
   // Update estimated price when quantity or product changes
   const cantidadProforma = document.getElementById('proforma-cantidad-socio');
