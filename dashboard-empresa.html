@@ -18,21 +18,11 @@
 
   <div class="dashboard-container">
     <div class="sidebar">
-      <div class="sidebar-item active" onclick="showSection('productos')">
-        <span>📦</span> Mis Productos
-      </div>
-      <div class="sidebar-item" onclick="showSection('socios')">
-        <span>👥</span> Socios Activos
-      </div>
-      <div class="sidebar-item" onclick="showSection('proformas')">
-        <span>📋</span> Proformas Solicitadas
-      </div>
-      <div class="sidebar-item" onclick="showSection('ventas')">
-        <span>📊</span> Reportes de Ventas
-      </div>
-      <div class="sidebar-item" onclick="showSection('perfil')">
-        <span>⚙️</span> Mi Perfil
-      </div>
+      <div class="sidebar-item active" onclick="showSection('productos')">🧱 Mis Productos</div>
+      <div class="sidebar-item" onclick="showSection('socios')">👥 Socios Activos</div>
+      <div class="sidebar-item" onclick="showSection('proformas')">🧾 Proformas Solicitadas</div>
+      <div class="sidebar-item" onclick="showSection('ventas')">📊 Reportes de Ventas</div>
+      <div class="sidebar-item" onclick="showSection('perfil')">👤 Mi Perfil</div>
     </div>
 
     <div class="main-content">
@@ -126,137 +116,45 @@
             <p class="stat-number" id="productos-vendidos">0</p>
           </div>
           <div class="stat-card">
-            <h3>Socios Activos</h3>
-            <p class="stat-number" id="socios-activos">0</p>
+            <h3>Comisión Total</h3>
+            <p class="stat-number" id="comision-total">$0</p>
           </div>
-          <div class="stat-card">
-            <h3>Comisiones Pagadas</h3>
-            <p class="stat-number" id="comisiones-pagadas">$0</p>
-          </div>
-        </div>
-
-        <div class="table-container">
-          <h3>Historial de Ventas</h3>
-          <table class="data-table">
-            <thead>
-              <tr>
-                <th>Fecha</th>
-                <th>Producto</th>
-                <th>Socio</th>
-                <th>Cantidad</th>
-                <th>Total</th>
-                <th>Comisión</th>
-              </tr>
-            </thead>
-            <tbody id="ventas-table">
-              <!-- Las ventas se cargarán dinámicamente -->
-            </tbody>
-          </table>
         </div>
       </div>
 
       <!-- Perfil Section -->
       <div id="perfil-section" class="section">
         <div class="section-header">
-          <h2>Información de la Empresa</h2>
+          <h2>Mi Perfil</h2>
         </div>
-        
         <form id="empresa-profile-form" class="profile-form">
           <div class="form-group">
             <label>Nombre de la Empresa:</label>
-            <input type="text" id="profile-nombre" name="nombre">
+            <input type="text" id="empresa-nombre" name="nombre" required>
           </div>
           <div class="form-group">
-            <label>RUC:</label>
-            <input type="text" id="profile-ruc" name="ruc">
+            <label>RUC/Cédula:</label>
+            <input type="text" id="empresa-ruc" name="ruc">
           </div>
           <div class="form-group">
             <label>Dirección:</label>
-            <input type="text" id="profile-direccion" name="direccion">
+            <input type="text" id="empresa-direccion" name="direccion">
           </div>
           <div class="form-group">
             <label>Teléfono:</label>
-            <input type="tel" id="profile-telefono" name="telefono">
+            <input type="text" id="empresa-telefono" name="telefono">
           </div>
           <div class="form-group">
             <label>Email:</label>
-            <input type="email" id="profile-email" name="email">
+            <input type="email" id="empresa-email" name="email">
           </div>
           <div class="form-group">
             <label>Descripción:</label>
-            <textarea id="profile-descripcion" name="descripcion" rows="4"></textarea>
+            <textarea id="empresa-descripcion" name="descripcion" rows="3"></textarea>
           </div>
-          <button type="submit" class="btn-primary">Actualizar Información</button>
+          <button type="submit" class="btn-primary">Guardar Cambios</button>
         </form>
       </div>
-    </div>
-  </div>
-
-  <!-- Modal para ver detalles de proforma -->
-  <div id="proforma-details-modal" class="modal">
-    <div class="modal-content proforma-modal">
-      <span class="close" onclick="closeProformaDetailsModal()">&times;</span>
-      <h2>Detalles de Solicitud de Proforma</h2>
-      
-      <div id="proforma-info" class="proforma-info">
-        <!-- Los detalles se cargarán dinámicamente -->
-      </div>
-      
-      <div class="proforma-actions">
-        <button onclick="generarProforma()" class="btn-primary">Generar Proforma</button>
-        <button onclick="rechazarProforma()" class="btn-secondary">Rechazar Solicitud</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Modal para generar proforma -->
-  <div id="generar-proforma-modal" class="modal">
-    <div class="modal-content proforma-modal">
-      <span class="close" onclick="closeGenerarProformaModal()">&times;</span>
-      <h2>Generar Proforma</h2>
-      
-      <form id="generar-proforma-form">
-        <div class="form-row">
-          <div class="form-group">
-            <label>Precio Unitario ($):</label>
-            <input type="number" id="proforma-precio" name="precio" step="0.01" required>
-          </div>
-          <div class="form-group">
-            <label>Descuento (%):</label>
-            <input type="number" id="proforma-descuento" name="descuento" min="0" max="100" value="0">
-          </div>
-        </div>
-        
-        <div class="form-row">
-          <div class="form-group">
-            <label>Tiempo de Entrega (días):</label>
-            <input type="number" id="proforma-entrega" name="tiempoEntrega" min="1" required>
-          </div>
-          <div class="form-group">
-            <label>Válida hasta:</label>
-            <input type="date" id="proforma-validez" name="validezHasta" required>
-          </div>
-        </div>
-        
-        <div class="form-group">
-          <label>Términos y Condiciones:</label>
-          <textarea id="proforma-terminos" name="terminos" rows="4" placeholder="Términos específicos para esta proforma..."></textarea>
-        </div>
-        
-        <div class="form-group">
-          <label>Notas Adicionales:</label>
-          <textarea id="proforma-notas" name="notas" rows="3" placeholder="Información adicional para el cliente..."></textarea>
-        </div>
-        
-        <div class="proforma-preview" id="proforma-preview">
-          <!-- Vista previa de la proforma se generará aquí -->
-        </div>
-        
-        <div class="form-actions">
-          <button type="button" onclick="closeGenerarProformaModal()" class="btn-secondary">Cancelar</button>
-          <button type="submit" class="btn-primary">Enviar Proforma al Socio</button>
-        </div>
-      </form>
     </div>
   </div>
 
@@ -264,7 +162,7 @@
   <div id="add-product-modal" class="modal">
     <div class="modal-content">
       <span class="close" onclick="closeAddProductModal()">&times;</span>
-      <h2>Agregar Nuevo Producto</h2>
+      <h2>Agregar Producto</h2>
       <form id="add-product-form">
         <div class="form-group">
           <label>Nombre del Producto:</label>

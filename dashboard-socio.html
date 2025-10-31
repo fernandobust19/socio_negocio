@@ -18,27 +18,13 @@
 
   <div class="dashboard-container">
     <div class="sidebar">
-      <div class="sidebar-item active" onclick="showSection('empresas')">
-        <span>🏢</span> Empresas Disponibles
-      </div>
-      <div class="sidebar-item" onclick="showSection('productos')">
-        <span>📦</span> Productos para Vender
-      </div>
-      <div class="sidebar-item" onclick="showSection('clientes')">
-        <span>👤</span> Mis Clientes
-      </div>
-      <div class="sidebar-item" onclick="showSection('proformas')">
-        <span>📋</span> Proformas
-      </div>
-      <div class="sidebar-item" onclick="showSection('mis-ventas')">
-        <span>💰</span> Mis Ventas
-      </div>
-      <div class="sidebar-item" onclick="showSection('comisiones')">
-        <span>📈</span> Comisiones
-      </div>
-      <div class="sidebar-item" onclick="showSection('perfil')">
-        <span>👤</span> Mi Perfil
-      </div>
+      <div class="sidebar-item active" onclick="showSection('empresas')">🏢 Empresas Disponibles</div>
+      <div class="sidebar-item" onclick="showSection('productos')">🧱 Productos para Vender</div>
+      <div class="sidebar-item" onclick="showSection('clientes')">👥 Mis Clientes</div>
+      <div class="sidebar-item" onclick="showSection('proformas')">🧾 Proformas</div>
+      <div class="sidebar-item" onclick="showSection('mis-ventas')">🛒 Mis Ventas</div>
+      <div class="sidebar-item" onclick="showSection('comisiones')">💰 Comisiones</div>
+      <div class="sidebar-item" onclick="showSection('perfil')">👤 Mi Perfil</div>
     </div>
 
     <div class="main-content">
@@ -128,7 +114,7 @@
                 <th>Empresa</th>
                 <th>Producto</th>
                 <th>Cantidad</th>
-                <th>Total Estimado</th>
+                <th>Precio Estimado</th>
                 <th>Estado</th>
                 <th>Acciones</th>
               </tr>
@@ -143,10 +129,9 @@
       <!-- Mis Ventas Section -->
       <div id="mis-ventas-section" class="section">
         <div class="section-header">
-          <h2>Registro de Ventas</h2>
+          <h2>Mis Ventas</h2>
           <button onclick="showRegistrarVentaModal()" class="btn-primary">+ Registrar Venta</button>
         </div>
-        
         <div class="table-container">
           <table class="data-table">
             <thead>
@@ -155,10 +140,8 @@
                 <th>Empresa</th>
                 <th>Producto</th>
                 <th>Cantidad</th>
-                <th>Precio Unit.</th>
                 <th>Total</th>
                 <th>Comisión</th>
-                <th>Estado</th>
               </tr>
             </thead>
             <tbody id="ventas-socio-table">
@@ -171,9 +154,8 @@
       <!-- Comisiones Section -->
       <div id="comisiones-section" class="section">
         <div class="section-header">
-          <h2>Panel de Comisiones</h2>
+          <h2>Comisiones</h2>
         </div>
-        
         <div class="stats-grid">
           <div class="stat-card">
             <h3>Comisiones del Mes</h3>
@@ -184,19 +166,8 @@
             <p class="stat-number" id="comisiones-total">$0</p>
           </div>
           <div class="stat-card">
-            <h3>Ventas Realizadas</h3>
-            <p class="stat-number" id="ventas-realizadas">0</p>
-          </div>
-          <div class="stat-card">
             <h3>Empresas Colaborando</h3>
             <p class="stat-number" id="empresas-colaborando">0</p>
-          </div>
-        </div>
-
-        <div class="chart-container">
-          <h3>Comisiones por Empresa</h3>
-          <div id="comisiones-chart" class="chart">
-            <!-- Gráfico simple de comisiones por empresa -->
           </div>
         </div>
       </div>
@@ -204,191 +175,40 @@
       <!-- Perfil Section -->
       <div id="perfil-section" class="section">
         <div class="section-header">
-          <h2>Mi Información Personal</h2>
+          <h2>Mi Perfil</h2>
         </div>
-        
         <form id="socio-profile-form" class="profile-form">
           <div class="form-group">
             <label>Nombres:</label>
-            <input type="text" id="profile-nombres" name="nombres">
+            <input type="text" id="perfil-nombres" name="nombres" required>
           </div>
           <div class="form-group">
             <label>Apellidos:</label>
-            <input type="text" id="profile-apellidos" name="apellidos">
+            <input type="text" id="perfil-apellidos" name="apellidos" required>
           </div>
           <div class="form-group">
             <label>Cédula:</label>
-            <input type="text" id="profile-cedula" name="cedula" readonly>
+            <input type="text" id="perfil-cedula" name="cedula" required>
           </div>
           <div class="form-group">
             <label>Teléfono:</label>
-            <input type="tel" id="profile-telefono" name="telefono">
+            <input type="text" id="perfil-telefono" name="telefono" required>
           </div>
           <div class="form-group">
             <label>Email:</label>
-            <input type="email" id="profile-email" name="email">
+            <input type="email" id="perfil-email" name="email" required>
           </div>
           <div class="form-group">
             <label>Dirección:</label>
-            <input type="text" id="profile-direccion" name="direccion">
+            <input type="text" id="perfil-direccion" name="direccion">
           </div>
           <div class="form-group">
             <label>Experiencia:</label>
-            <textarea id="profile-experiencia" name="experiencia" rows="4"></textarea>
+            <textarea id="perfil-experiencia" name="experiencia" rows="3"></textarea>
           </div>
-          <button type="submit" class="btn-primary">Actualizar Información</button>
+          <button type="submit" class="btn-primary">Guardar Cambios</button>
         </form>
       </div>
-    </div>
-  </div>
-
-  <!-- Modal para agregar cliente -->
-  <div id="agregar-cliente-modal" class="modal">
-    <div class="modal-content">
-      <span class="close" onclick="closeAgregarClienteModal()">&times;</span>
-      <h2>Agregar Nuevo Cliente</h2>
-      <form id="agregar-cliente-form">
-        <div class="form-row">
-          <div class="form-group">
-            <label>Tipo de Cliente:</label>
-            <select id="cliente-tipo" name="tipo" required onchange="toggleClienteFields()">
-              <option value="">Seleccionar tipo</option>
-              <option value="persona">Persona Natural</option>
-              <option value="empresa">Empresa</option>
-            </select>
-          </div>
-        </div>
-        
-        <div id="persona-fields" class="cliente-fields" style="display: none;">
-          <div class="form-row">
-            <div class="form-group">
-              <label>Nombres:</label>
-              <input type="text" id="cliente-nombres" name="nombres">
-            </div>
-            <div class="form-group">
-              <label>Apellidos:</label>
-              <input type="text" id="cliente-apellidos" name="apellidos">
-            </div>
-          </div>
-          <div class="form-group">
-            <label>Cédula:</label>
-            <input type="text" id="cliente-cedula" name="cedula">
-          </div>
-        </div>
-        
-        <div id="empresa-fields" class="cliente-fields" style="display: none;">
-          <div class="form-group">
-            <label>Razón Social:</label>
-            <input type="text" id="cliente-razon-social" name="razonSocial">
-          </div>
-          <div class="form-row">
-            <div class="form-group">
-              <label>RUC:</label>
-              <input type="text" id="cliente-ruc" name="ruc">
-            </div>
-            <div class="form-group">
-              <label>Representante Legal:</label>
-              <input type="text" id="cliente-representante" name="representante">
-            </div>
-          </div>
-        </div>
-        
-        <div class="form-row">
-          <div class="form-group">
-            <label>Email:</label>
-            <input type="email" id="cliente-email" name="email" required>
-          </div>
-          <div class="form-group">
-            <label>Teléfono:</label>
-            <input type="tel" id="cliente-telefono" name="telefono" required>
-          </div>
-        </div>
-        
-        <div class="form-group">
-          <label>Dirección:</label>
-          <input type="text" id="cliente-direccion" name="direccion" required>
-        </div>
-        
-        <div class="form-group">
-          <label>Ciudad:</label>
-          <input type="text" id="cliente-ciudad" name="ciudad" required>
-        </div>
-        
-        <div class="form-group">
-          <label>Notas:</label>
-          <textarea id="cliente-notas" name="notas" rows="3" placeholder="Información adicional del cliente..."></textarea>
-        </div>
-        
-        <div class="form-actions">
-          <button type="button" onclick="closeAgregarClienteModal()" class="btn-secondary">Cancelar</button>
-          <button type="submit" class="btn-primary">Guardar Cliente</button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <!-- Modal para solicitar proforma -->
-  <div id="solicitar-proforma-modal" class="modal">
-    <div class="modal-content">
-      <span class="close" onclick="closeSolicitarProformaModal()">&times;</span>
-      <h2>Solicitar Proforma</h2>
-      <form id="solicitar-proforma-form">
-        <div class="form-row">
-          <div class="form-group">
-            <label>Cliente:</label>
-            <select id="proforma-cliente" name="clienteId" required>
-              <option value="">Seleccionar cliente</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>Empresa:</label>
-            <select id="proforma-empresa-socio" name="empresaId" required onchange="loadProductosProforma()">
-              <option value="">Seleccionar empresa</option>
-            </select>
-          </div>
-        </div>
-        
-        <div class="form-group">
-          <label>Producto:</label>
-          <select id="proforma-producto-socio" name="productoId" required>
-            <option value="">Seleccionar producto</option>
-          </select>
-        </div>
-        
-        <div class="form-row">
-          <div class="form-group">
-            <label>Cantidad Solicitada:</label>
-            <input type="number" id="proforma-cantidad-socio" name="cantidad" min="1" required>
-          </div>
-          <div class="form-group">
-            <label>Precio Estimado:</label>
-            <input type="number" id="proforma-precio-estimado" name="precioEstimado" step="0.01" readonly>
-          </div>
-        </div>
-        
-        <div class="form-group">
-          <label>Observaciones del Cliente:</label>
-          <textarea id="proforma-observaciones" name="observaciones" rows="3" placeholder="Requerimientos especiales, plazos, etc."></textarea>
-        </div>
-        
-        <div class="form-group">
-          <label>Urgencia:</label>
-          <select id="proforma-urgencia" name="urgencia" required>
-            <option value="normal">Normal (5-7 días)</option>
-            <option value="urgente">Urgente (1-3 días)</option>
-            <option value="muy_urgente">Muy Urgente (24 horas)</option>
-          </select>
-        </div>
-        
-        <div class="cliente-info" id="cliente-info-preview">
-          <!-- Información del cliente seleccionado se mostrará aquí -->
-        </div>
-        
-        <div class="form-actions">
-          <button type="button" onclick="closeSolicitarProformaModal()" class="btn-secondary">Cancelar</button>
-          <button type="submit" class="btn-primary">Enviar Solicitud de Proforma</button>
-        </div>
-      </form>
     </div>
   </div>
 
