@@ -121,7 +121,9 @@ async function loginEmpresa(email, password) {
     });
 
     if (!response.ok) {
-      return false; // The calling code handles the alert for incorrect login
+      const err = await response.json().catch(() => ({}));
+      if (response.status >= 500) alert(err.message || 'Error del servidor. Intenta más tarde.');
+      return false; // El llamador mostrará alerta genérica para credenciales
     }
 
     const { token, user } = await response.json();
@@ -151,6 +153,8 @@ async function loginSocio(email, password) {
     });
 
     if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      if (response.status >= 500) alert(err.message || 'Error del servidor. Intenta más tarde.');
       return false;
     }
 

@@ -35,15 +35,6 @@ const pool = new Pool({
 // Migraciones automáticas
 (async () => {
   try {
-    // Validaciones de longitud para prevenir errores 22001 (truncation)
-    if (
-      (typeof nombre === 'string' && nombre.length > 255) ||
-      (typeof email === 'string' && email.length > 255) ||
-      (typeof ruc === 'string' && ruc.length > 20) ||
-      (typeof telefono === 'string' && telefono.length > 50)
-    ) {
-      return res.status(400).json({ message: 'Alguno de los campos excede la longitud permitida.' });
-    }
     await pool.query(`
       CREATE TABLE IF NOT EXISTS empresas (
         id SERIAL PRIMARY KEY,
@@ -206,11 +197,8 @@ app.post('/api/register/empresa', async (req, res) => {
   } catch (err) {
     if (err.code === '23505') return res.status(409).json({ message: 'El email ya está registrado.' });
     if (err.code === '22P02') return res.status(400).json({ message: 'Formato de datos inválido.' });
-    if (err.code === '42P01') return res.status(500).json({ message: 'Error de base de datos: falta una tabla. Reinicia el servidor para aplicar migraciones.' });
-    if (err.code === '22001') return res.status(400).json({ message: 'Alguno de los campos excede la longitud permitida.' });
     console.error('Error registro empresa:', err);
-    const msg = process.env.NODE_ENV !== 'production' && err && err.message ? `Error interno: ${err.message}` : 'Error interno del servidor.';
-    res.status(500).json({ message: msg, code: err.code });
+    res.status(500).json({ message: 'Error interno del servidor.' });
   }
 });
 
@@ -243,7 +231,6 @@ app.post('/api/register/socio', async (req, res) => {
 // Login empresa
 app.post('/api/login/empresa', async (req, res) => {
   const { email, password } = req.body;
-  if (!email || !password) return res.status(400).json({ message: 'Email y contraseña son obligatorios.' });
   try {
     const { rows } = await pool.query('SELECT * FROM empresas WHERE email = $1', [email]);
     if (!rows.length) return res.status(401).json({ message: 'Email o contraseña incorrectos.' });
@@ -253,16 +240,13 @@ app.post('/api/login/empresa', async (req, res) => {
     delete user.password_hash;
     res.status(200).json({ message: 'Login exitoso', token, user });
   } catch (err) {
-    console.error('Error login empresa:', err);
-    const msg = process.env.NODE_ENV !== 'production' && err && err.message ? `Error interno: ${err.message}` : 'Error interno del servidor.';
-    res.status(500).json({ message: msg, code: err.code });
+    res.status(500).json({ message: 'Error interno del servidor.' });
   }
 });
 
 // Login socio
 app.post('/api/login/socio', async (req, res) => {
   const { email, password } = req.body;
-  if (!email || !password) return res.status(400).json({ message: 'Email y contraseña son obligatorios.' });
   try {
     const { rows } = await pool.query('SELECT * FROM socios WHERE email = $1', [email]);
     if (!rows.length) return res.status(401).json({ message: 'Email o contraseña incorrectos.' });
@@ -272,9 +256,7 @@ app.post('/api/login/socio', async (req, res) => {
     delete user.password_hash;
     res.status(200).json({ message: 'Login exitoso', token, user });
   } catch (err) {
-    console.error('Error login socio:', err);
-    const msg = process.env.NODE_ENV !== 'production' && err && err.message ? `Error interno: ${err.message}` : 'Error interno del servidor.';
-    res.status(500).json({ message: msg, code: err.code });
+    res.status(500).json({ message: 'Error interno del servidor.' });
   }
 });
 
@@ -599,3 +581,4 @@ app.get('/api/health', async (req, res) => {
 app.listen(port, () => {
   console.log(`Servidor escuchando en http://localhost:${port}`);
 });
+
