@@ -1,82 +1,13 @@
 // Global variables
 // En desarrollo, el servidor se ejecuta en localhost:3000. 
 // En producción (Render), usaremos una ruta relativa y una regla de reescritura.
-const apiUrl = 'https://socio-negocio.onrender.com';
+const apiUrl = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+  ? 'http://localhost:3000'
+  : 'https://socio-negocio.onrender.com';
 let currentUser = null;
 let userType = null; // 'empresa' or 'socio'
 
-// Initialize localStorage data if not exists
-function initializeData() {
-  if (!localStorage.getItem('empresas')) {
-    // Initialize with UPCONS as default company
-    const empresas = [{
-      id: 1,
-      nombre: 'UPCONS',
-      ruc: '1234567890001',
-      direccion: 'Ecuatoriana y Mariscal Sucre',
-      telefono: '0987654321',
-      email: 'upcons@email.com',
-      password: 'upcons123',
-      descripcion: 'Importadora de tejas y materiales de construcción con locales en La Ecuatoriana, Mariscal Sucre y Arturo Tipanguano.',
-      logo: null,
-      fechaRegistro: new Date().toISOString()
-    }];
-    localStorage.setItem('empresas', JSON.stringify(empresas));
-  }
-  
-  if (!localStorage.getItem('socios')) {
-    localStorage.setItem('socios', JSON.stringify([]));
-  }
-  
-  if (!localStorage.getItem('productos')) {
-    // Initialize with sample products for UPCONS
-    const productos = [
-      {
-        id: 1,
-        empresaId: 1,
-        nombre: 'Teja Colonial Roja',
-        categoria: 'tejas',
-        precio: 1.50,
-        comision: 15,
-        stock: 5000,
-        descripcion: 'Teja colonial de alta calidad, color rojo tradicional'
-      },
-      {
-        id: 2,
-        empresaId: 1,
-        nombre: 'Teja Plana Gris',
-        categoria: 'tejas',
-        precio: 2.00,
-        comision: 20,
-        stock: 3000,
-        descripcion: 'Teja plana moderna, color gris, ideal para diseños contemporáneos'
-      },
-      {
-        id: 3,
-        empresaId: 1,
-        nombre: 'Teja Francesa Terracota',
-        categoria: 'tejas',
-        precio: 2.50,
-        comision: 18,
-        stock: 2500,
-        descripcion: 'Teja estilo francés, color terracota natural'
-      }
-    ];
-    localStorage.setItem('productos', JSON.stringify(productos));
-  }
-  
-  if (!localStorage.getItem('ventas')) {
-    localStorage.setItem('ventas', JSON.stringify([]));
-  }
-  
-  if (!localStorage.getItem('clientes')) {
-    localStorage.setItem('clientes', JSON.stringify([]));
-  }
-  
-  if (!localStorage.getItem('proformas')) {
-    localStorage.setItem('proformas', JSON.stringify([]));
-  }
-}
+
 
 // Authentication functions
 async function registerEmpresa(empresaData) {
@@ -276,69 +207,149 @@ function showSection(sectionName) {
 }
 
 // Product management
-function addProduct(productData) {
-  const productos = JSON.parse(localStorage.getItem('productos') || '[]');
-  
-  const newProduct = {
-    id: productos.length + 1,
-    empresaId: currentUser.id,
-    ...productData,
-    fechaCreacion: new Date().toISOString()
-  };
-  
-  productos.push(newProduct);
-  localStorage.setItem('productos', JSON.stringify(productos));
-  
-  return true;
-}
+async function addProduct(productData) {
+  try {
+    const token = localStorage.getItem('token');
+    const response = await fetch(`${apiUrl}/api/products`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify(productData),
+    });
 
-function loadProducts() {
-  if (!currentUser || userType !== 'empresa') return;
-  
-  const productos = JSON.parse(localStorage.getItem('productos') || '[]');
-  const empresaProductos = productos.filter(p => p.empresaId === currentUser.id);
-  
-  const container = document.getElementById('products-container');
-  if (!container) return;
-  
-  container.innerHTML = '';
-  
-  if (empresaProductos.length === 0) {
-    container.innerHTML = '<p>No tienes productos registrados. Agrega tu primer producto.</p>';
-    return;
-  }
-  
-  empresaProductos.forEach(producto => {
-    const productCard = document.createElement('div');
-    productCard.className = 'product-card';
-    productCard.innerHTML = `
-      <h3>${producto.nombre}</h3>
-      <p class="price">$${producto.precio}</p>
-      <p class="commission">Comisión: ${producto.comision}%</p>
-      <p class="stock">Stock: ${producto.stock} unidades</p>
-      <p>${producto.descripcion}</p>
-      ${producto.colorCapuchon ? `<p><strong>Color capuchón:</strong> ${producto.colorCapuchon}</p>` : ''}
-      ${producto.colorCapuchon ? `<p><strong>Color capuchón:</strong> ${producto.colorCapuchon}</p>` : ''}
-      <div style="margin-top: 1rem;">
-        <button class="btn-action btn-edit" onclick="editProduct(${producto.id})">Editar</button>
-        <button class="btn-action btn-delete" onclick="deleteProduct(${producto.id})">Eliminar</button>
-      </div>
-    `;
-    container.appendChild(productCard);
-  });
-}
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      alert(`Error al agregar el producto: ${errorData.message || response.statusText}`);
+      return false;
+    }
 
-function editProduct(productId) {
-  // Implementation for editing products
-  alert('Función de editar producto en desarrollo');
-}
-
-function deleteProduct(productId) {
-  if (confirm('¿Estás seguro de que quieres eliminar este producto?')) {
-    const productos = JSON.parse(localStorage.getItem('productos') || '[]');
-    const updatedProductos = productos.filter(p => p.id !== productId);
-    localStorage.setItem('productos', JSON.stringify(updatedProductos));
+    const result = await response.json();
+    console.log(result.message);
+    alert('Producto agregado exitosamente');
+    
+    // Reload products view
     loadProducts();
+
+    return true;
+  } catch (error) {
+    console.error('Error en addProduct:', error);
+    alert('Ocurrió un error de red. Por favor, intenta de nuevo.');
+    return false;
+  }
+}
+
+async function loadProducts() {
+  if (!currentUser || userType !== 'empresa') return;
+
+  try {
+    const token = localStorage.getItem('token');
+    const response = await fetch(`${apiUrl}/api/products`, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      console.error(`Error al cargar productos: ${errorData.message || response.statusText}`);
+      return;
+    }
+
+    const empresaProductos = await response.json();
+    const container = document.getElementById('products-container');
+    if (!container) return;
+
+    container.innerHTML = '';
+
+    if (empresaProductos.length === 0) {
+      container.innerHTML = '<p>No tienes productos registrados. Agrega tu primer producto.</p>';
+      return;
+    }
+
+    empresaProductos.forEach(producto => {
+      const productCard = document.createElement('div');
+      productCard.className = 'product-card';
+      productCard.innerHTML = `
+        <h3>${producto.nombre}</h3>
+        <p class="price">$${producto.precio}</p>
+        <p class="commission">Comisión: ${producto.comision}%</p>
+        <p class="stock">Stock: ${producto.stock} unidades</p>
+        <p>${producto.descripcion}</p>
+        ${producto.color_capuchon ? `<p><strong>Color capuchón:</strong> ${producto.color_capuchon}</p>` : ''}
+        <div style="margin-top: 1rem;">
+          <button class="btn-action btn-edit" onclick="editProduct(${producto.id})">Editar</button>
+          <button class="btn-action btn-delete" onclick="deleteProduct(${producto.id})">Eliminar</button>
+        </div>
+      `;
+      container.appendChild(productCard);
+    });
+  } catch (error) {
+    console.error('Error en loadProducts:', error);
+  }
+}
+
+async function editProduct(productId) {
+  try {
+    const token = localStorage.getItem('token');
+    const response = await fetch(`${apiUrl}/api/products`, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    if (!response.ok) {
+      throw new Error('Could not fetch products');
+    }
+    const products = await response.json();
+    const product = products.find(p => p.id === productId);
+
+    if (product) {
+      document.getElementById('edit-product-id').value = product.id;
+      document.getElementById('edit-product-nombre').value = product.nombre;
+      document.getElementById('edit-product-categoria').value = product.categoria;
+      document.getElementById('edit-product-precio').value = product.precio;
+      document.getElementById('edit-product-comision').value = product.comision;
+      document.getElementById('edit-product-stock').value = product.stock;
+      document.getElementById('edit-product-descripcion').value = product.descripcion;
+      
+      document.getElementById('edit-product-modal').style.display = 'block';
+    }
+  } catch (error) {
+    console.error('Error in editProduct:', error);
+    alert('Ocurrió un error al obtener los datos del producto.');
+  }
+}
+
+function closeEditProductModal() {
+  document.getElementById('edit-product-modal').style.display = 'none';
+  document.getElementById('edit-product-form').reset();
+}
+
+async function deleteProduct(productId) {
+  if (confirm('¿Estás seguro de que quieres eliminar este producto?')) {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${apiUrl}/api/products/${productId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        alert(`Error al eliminar el producto: ${errorData.message || response.statusText}`);
+        return;
+      }
+
+      alert('Producto eliminado exitosamente');
+      loadProducts();
+
+    } catch (error) {
+      console.error('Error en deleteProduct:', error);
+      alert('Ocurrió un error de red. Por favor, intenta de nuevo.');
+    }
   }
 }
 
@@ -399,80 +410,92 @@ function loadSocioProfile() {
   });
 }
 
-function loadSocios() {
+async function loadSocios() {
   if (!currentUser || userType !== 'empresa') return;
-  
-  const socios = JSON.parse(localStorage.getItem('socios') || '[]');
-  const ventas = JSON.parse(localStorage.getItem('ventas') || '[]');
-  const productos = JSON.parse(localStorage.getItem('productos') || '[]');
-  
-  const empresaProductos = productos.filter(p => p.empresaId === currentUser.id);
-  const empresaProductosIds = empresaProductos.map(p => p.id);
-  
-  // Get socios who have sold our products
-  const sociosVendedores = socios.filter(socio => {
-    return ventas.some(venta => 
-      venta.socioId === socio.id && 
-      empresaProductosIds.includes(venta.productoId)
-    );
-  });
-  
-  const tableBody = document.getElementById('socios-table');
-  if (!tableBody) return;
-  
-  tableBody.innerHTML = '';
-  
-  if (sociosVendedores.length === 0) {
-    tableBody.innerHTML = '<tr><td colspan="6">No hay socios vendiendo tus productos aún.</td></tr>';
-    return;
+
+  try {
+    const token = localStorage.getItem('token');
+    const response = await fetch(`${apiUrl}/api/socios`, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      console.error(`Error al cargar socios: ${errorData.message || response.statusText}`);
+      return;
+    }
+
+    const sociosVendedores = await response.json();
+    const tableBody = document.getElementById('socios-table');
+    if (!tableBody) return;
+
+    tableBody.innerHTML = '';
+
+    if (sociosVendedores.length === 0) {
+      tableBody.innerHTML = '<tr><td colspan="6">No hay socios vendiendo tus productos aún.</td></tr>';
+      return;
+    }
+
+    sociosVendedores.forEach(socio => {
+      const row = document.createElement('tr');
+      row.innerHTML = `
+        <td>${socio.nombres} ${socio.apellidos}</td>
+        <td>${socio.email}</td>
+        <td>${socio.telefono}</td>
+        <td>${socio.productos_vendidos}</td>
+        <td>$${parseFloat(socio.comision_total).toFixed(2)}</td>
+        <td><span class="status-active">Activo</span></td>
+      `;
+      tableBody.appendChild(row);
+    });
+  } catch (error) {
+    console.error('Error en loadSocios:', error);
   }
-  
-  sociosVendedores.forEach(socio => {
-    const socioVentas = ventas.filter(v => 
-      v.socioId === socio.id && 
-      empresaProductosIds.includes(v.productoId)
-    );
-    
-    const productosVendidos = socioVentas.reduce((sum, v) => sum + parseInt(v.cantidad), 0);
-    const comisionTotal = socioVentas.reduce((sum, v) => sum + parseFloat(v.comision), 0);
-    
-    const row = document.createElement('tr');
-    row.innerHTML = `
-      <td>${socio.nombres} ${socio.apellidos}</td>
-      <td>${socio.email}</td>
-      <td>${socio.telefono}</td>
-      <td>${productosVendidos}</td>
-      <td>$${comisionTotal.toFixed(2)}</td>
-      <td><span class="status-active">Activo</span></td>
-    `;
-    tableBody.appendChild(row);
-  });
 }
 
-function loadEmpresas() {
+async function loadEmpresas() {
   if (!currentUser || userType !== 'socio') return;
-  
-  const empresas = JSON.parse(localStorage.getItem('empresas') || '[]');
-  const container = document.getElementById('empresas-container');
-  
-  if (!container) return;
-  
-  container.innerHTML = '';
-  
-  empresas.forEach(empresa => {
-    const empresaCard = document.createElement('div');
-    empresaCard.className = 'empresa-card';
-    empresaCard.innerHTML = `
-      <h3>${empresa.nombre}</h3>
-      <p><strong>Dirección:</strong> ${empresa.direccion}</p>
-      <p><strong>Teléfono:</strong> ${empresa.telefono}</p>
-      <p>${empresa.descripcion}</p>
-      <button class="btn-primary" onclick="verProductosEmpresa(${empresa.id})" style="margin-top: 1rem; width: 100%;">
-        Ver Productos
-      </button>
-    `;
-    container.appendChild(empresaCard);
-  });
+
+  try {
+    const token = localStorage.getItem('token');
+    const response = await fetch(`${apiUrl}/api/empresas`, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      console.error(`Error al cargar empresas: ${errorData.message || response.statusText}`);
+      return;
+    }
+
+    const empresas = await response.json();
+    const container = document.getElementById('empresas-container');
+
+    if (!container) return;
+
+    container.innerHTML = '';
+
+    empresas.forEach(empresa => {
+      const empresaCard = document.createElement('div');
+      empresaCard.className = 'empresa-card';
+      empresaCard.innerHTML = `
+        <h3>${empresa.nombre}</h3>
+        <p><strong>Dirección:</strong> ${empresa.direccion}</p>
+        <p><strong>Teléfono:</strong> ${empresa.telefono}</p>
+        <p>${empresa.descripcion}</p>
+        <button class="btn-primary" onclick="verProductosEmpresa(${empresa.id})" style="margin-top: 1rem; width: 100%;">
+          Ver Productos
+        </button>
+      `;
+      container.appendChild(empresaCard);
+    });
+  } catch (error) {
+    console.error('Error en loadEmpresas:', error);
+  }
 }
 
 function verProductosEmpresa(empresaId) {
@@ -480,53 +503,67 @@ function verProductosEmpresa(empresaId) {
   filterProductsByEmpresa(empresaId);
 }
 
-function loadProductosDisponibles() {
+async function loadProductosDisponibles() {
   if (!currentUser || userType !== 'socio') return;
-  
-  const productos = JSON.parse(localStorage.getItem('productos') || '[]');
-  const empresas = JSON.parse(localStorage.getItem('empresas') || '[]');
-  
-  const container = document.getElementById('productos-disponibles');
-  const empresaFilter = document.getElementById('empresa-filter');
-  
-  if (!container) return;
-  
-  // Populate empresa filter
-  if (empresaFilter) {
-    empresaFilter.innerHTML = '<option value="">Todas las empresas</option>';
-    empresas.forEach(empresa => {
-      const option = document.createElement('option');
-      option.value = empresa.id;
-      option.textContent = empresa.nombre;
-      empresaFilter.appendChild(option);
+
+  try {
+    const token = localStorage.getItem('token');
+    const response = await fetch(`${apiUrl}/api/products`, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
     });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      console.error(`Error al cargar productos disponibles: ${errorData.message || response.statusText}`);
+      return;
+    }
+
+    const productos = await response.json();
+    const container = document.getElementById('productos-disponibles');
+    const empresaFilter = document.getElementById('empresa-filter');
+
+    if (!container) return;
+
+    // Populate empresa filter
+    if (empresaFilter) {
+      const empresas = [...new Set(productos.map(p => p.empresa_nombre))];
+      empresaFilter.innerHTML = '<option value="">Todas las empresas</option>';
+      empresas.forEach(empresa_nombre => {
+        const option = document.createElement('option');
+        option.value = empresa_nombre;
+        option.textContent = empresa_nombre;
+        empresaFilter.appendChild(option);
+      });
+    }
+
+    container.innerHTML = '';
+
+    if (productos.length === 0) {
+      container.innerHTML = '<p>No hay productos disponibles para vender.</p>';
+      return;
+    }
+
+    productos.forEach(producto => {
+      const productCard = document.createElement('div');
+      productCard.className = 'product-card';
+      productCard.innerHTML = `
+        <h3>${producto.nombre}</h3>
+        <p><strong>Empresa:</strong> ${producto.empresa_nombre || 'N/A'}</p>
+        <p class="price">$${producto.precio}</p>
+        <p class="commission">Tu comisión: ${producto.comision}% ($${(producto.precio * producto.comision / 100).toFixed(2)})</p>
+        <p class="stock">Stock: ${producto.stock} unidades</p>
+        <p>${producto.descripcion}</p>
+        <button class="btn-primary" onclick="seleccionarProducto(${producto.id})" style="margin-top: 1rem; width: 100%;">
+          Vender Este Producto
+        </button>
+      `;
+      container.appendChild(productCard);
+    });
+  } catch (error) {
+    console.error('Error en loadProductosDisponibles:', error);
   }
-  
-  container.innerHTML = '';
-  
-  if (productos.length === 0) {
-    container.innerHTML = '<p>No hay productos disponibles para vender.</p>';
-    return;
-  }
-  
-  productos.forEach(producto => {
-    const empresa = empresas.find(e => e.id === producto.empresaId);
-    
-    const productCard = document.createElement('div');
-    productCard.className = 'product-card';
-    productCard.innerHTML = `
-      <h3>${producto.nombre}</h3>
-      <p><strong>Empresa:</strong> ${empresa?.nombre || 'N/A'}</p>
-      <p class="price">$${producto.precio}</p>
-      <p class="commission">Tu comisión: ${producto.comision}% ($${(producto.precio * producto.comision / 100).toFixed(2)})</p>
-      <p class="stock">Stock: ${producto.stock} unidades</p>
-      <p>${producto.descripcion}</p>
-      <button class="btn-primary" onclick="seleccionarProducto(${producto.id})" style="margin-top: 1rem; width: 100%;">
-        Vender Este Producto
-      </button>
-    `;
-    container.appendChild(productCard);
-  });
 }
 
 function seleccionarProducto(productoId) {
@@ -766,112 +803,119 @@ function calculateTotal() {
   }
 }
 
-function registrarVenta(ventaData) {
-  const ventas = JSON.parse(localStorage.getItem('ventas') || '[]');
-  const productos = JSON.parse(localStorage.getItem('productos') || '[]');
-  
-  const producto = productos.find(p => p.id == ventaData.productoId);
-  
-  if (!producto) {
-    alert('Producto no encontrado');
+async function registrarVenta(ventaData) {
+  try {
+    const token = localStorage.getItem('token');
+    const response = await fetch(`${apiUrl}/api/ventas`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify(ventaData),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      alert(`Error al registrar la venta: ${errorData.message || response.statusText}`);
+      return false;
+    }
+
+    alert('Venta registrada exitosamente');
+    closeRegistrarVentaModal();
+    loadVentasSocio();
+    loadComisionesSocio();
+    return true;
+
+  } catch (error) {
+    console.error('Error en registrarVenta:', error);
+    alert('Ocurrió un error de red. Por favor, intenta de nuevo.');
     return false;
   }
-  
-  if (producto.stock < parseInt(ventaData.cantidad)) {
-    alert('Stock insuficiente');
-    return false;
-  }
-  
-  const nuevaVenta = {
-    id: ventas.length + 1,
-    socioId: currentUser.id,
-    empresaId: parseInt(ventaData.empresaId),
-    productoId: parseInt(ventaData.productoId),
-    cantidad: parseInt(ventaData.cantidad),
-    precio: parseFloat(ventaData.precio),
-    total: parseFloat(ventaData.total),
-    comision: parseFloat(ventaData.comision),
-    cliente: ventaData.cliente,
-    notas: ventaData.notas,
-    fecha: new Date().toISOString(),
-    estado: 'completada'
-  };
-  
-  ventas.push(nuevaVenta);
-  localStorage.setItem('ventas', JSON.stringify(ventas));
-  
-  // Update product stock
-  producto.stock -= parseInt(ventaData.cantidad);
-  localStorage.setItem('productos', JSON.stringify(productos));
-  
-  return true;
 }
 
-function loadVentasSocio() {
+async function loadVentasSocio() {
   if (!currentUser || userType !== 'socio') return;
-  
-  const ventas = JSON.parse(localStorage.getItem('ventas') || '[]');
-  const productos = JSON.parse(localStorage.getItem('productos') || '[]');
-  const empresas = JSON.parse(localStorage.getItem('empresas') || '[]');
-  
-  const socioVentas = ventas.filter(v => v.socioId === currentUser.id);
-  const tableBody = document.getElementById('ventas-socio-table');
-  
-  if (!tableBody) return;
-  
-  tableBody.innerHTML = '';
-  
-  if (socioVentas.length === 0) {
-    tableBody.innerHTML = '<tr><td colspan="8">No has registrado ventas aún.</td></tr>';
-    return;
+
+  try {
+    const token = localStorage.getItem('token');
+    const response = await fetch(`${apiUrl}/api/ventas`, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      console.error(`Error al cargar las ventas: ${errorData.message || response.statusText}`);
+      return;
+    }
+
+    const socioVentas = await response.json();
+    const tableBody = document.getElementById('ventas-socio-table');
+
+    if (!tableBody) return;
+
+    tableBody.innerHTML = '';
+
+    if (socioVentas.length === 0) {
+      tableBody.innerHTML = '<tr><td colspan="8">No has registrado ventas aún.</td></tr>';
+      return;
+    }
+
+    socioVentas.forEach(venta => {
+      const row = document.createElement('tr');
+      row.innerHTML = `
+        <td>${new Date(venta.fecha_venta).toLocaleDateString()}</td>
+        <td>${venta.empresa_nombre || 'N/A'}</td>
+        <td>${venta.producto_nombre || 'N/A'}</td>
+        <td>${venta.cantidad}</td>
+        <td>$${(venta.precio_total / venta.cantidad).toFixed(2)}</td>
+        <td>$${parseFloat(venta.precio_total).toFixed(2)}</td>
+        <td>$${parseFloat(venta.comision_total).toFixed(2)}</td>
+        <td><span class="status-active">Completada</span></td>
+      `;
+      tableBody.appendChild(row);
+    });
+  } catch (error) {
+    console.error('Error en loadVentasSocio:', error);
   }
-  
-  socioVentas.forEach(venta => {
-    const producto = productos.find(p => p.id === venta.productoId);
-    const empresa = empresas.find(e => e.id === venta.empresaId);
-    
-    const row = document.createElement('tr');
-    row.innerHTML = `
-      <td>${new Date(venta.fecha).toLocaleDateString()}</td>
-      <td>${empresa?.nombre || 'N/A'}</td>
-      <td>${producto?.nombre || 'N/A'}</td>
-      <td>${venta.cantidad}</td>
-      <td>$${venta.precio.toFixed(2)}</td>
-      <td>$${venta.total.toFixed(2)}</td>
-      <td>$${venta.comision.toFixed(2)}</td>
-      <td><span class="status-active">${venta.estado}</span></td>
-    `;
-    tableBody.appendChild(row);
-  });
 }
 
-function loadComisionesSocio() {
+async function loadComisionesSocio() {
   if (!currentUser || userType !== 'socio') return;
-  
-  const ventas = JSON.parse(localStorage.getItem('ventas') || '[]');
-  const socioVentas = ventas.filter(v => v.socioId === currentUser.id);
-  
-  const comisionesMes = socioVentas
-    .filter(v => new Date(v.fecha).getMonth() === new Date().getMonth())
-    .reduce((sum, v) => sum + v.comision, 0);
-  
-  const comisionesTotal = socioVentas.reduce((sum, v) => sum + v.comision, 0);
-  const ventasRealizadas = socioVentas.length;
-  
-  const empresasColaborando = [...new Set(socioVentas.map(v => v.empresaId))].length;
-  
-  // Update stats
-  const elements = {
-    'comisiones-mes': `$${comisionesMes.toFixed(2)}`,
-    'comisiones-total': `$${comisionesTotal.toFixed(2)}`,
-    'ventas-realizadas': ventasRealizadas,
-    'empresas-colaborando': empresasColaborando
-  };
-  
-  Object.entries(elements).forEach(([id, value]) => {
-    const element = document.getElementById(id);
-    if (element) element.textContent = value;
-  });
+
+  try {
+    const token = localStorage.getItem('token');
+    const response = await fetch(`${apiUrl}/api/socios/stats`, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      console.error(`Error al cargar las estadísticas: ${errorData.message || response.statusText}`);
+      return;
+    }
+
+    const stats = await response.json();
+
+    // Update stats
+    const elements = {
+      'comisiones-mes': `$${parseFloat(stats.comisiones_mes).toFixed(2)}`,
+      'comisiones-total': `$${parseFloat(stats.comisiones_total).toFixed(2)}`,
+      'ventas-realizadas': stats.ventas_realizadas,
+      'empresas-colaborando': stats.empresas_colaborando
+    };
+
+    Object.entries(elements).forEach(([id, value]) => {
+      const element = document.getElementById(id);
+      if (element) element.textContent = value;
+    });
+  } catch (error) {
+    console.error('Error en loadComisionesSocio:', error);
+  }
 }
 
 function loadVentas() {
@@ -882,279 +926,336 @@ function loadStats() {
   // Implementation for empresa stats
 }
 
-function updateEmpresaProfile(profileData) {
+async function updateEmpresaProfile(profileData) {
   if (!currentUser || userType !== 'empresa') return false;
-  
-  const empresas = JSON.parse(localStorage.getItem('empresas') || '[]');
-  const empresaIndex = empresas.findIndex(e => e.id === currentUser.id);
-  
-  if (empresaIndex !== -1) {
-    empresas[empresaIndex] = { ...empresas[empresaIndex], ...profileData };
-    localStorage.setItem('empresas', JSON.stringify(empresas));
+
+  try {
+    const token = localStorage.getItem('token');
+    const response = await fetch(`${apiUrl}/api/empresas/profile`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify(profileData),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      alert(`Error al actualizar el perfil: ${errorData.message || response.statusText}`);
+      return false;
+    }
+
+    const result = await response.json();
     
-    // Update current user
-    currentUser = empresas[empresaIndex];
+    // Update current user in localStorage
+    currentUser = result.user;
     localStorage.setItem('currentUser', JSON.stringify(currentUser));
     
+    alert('Perfil actualizado exitosamente');
+    loadEmpresaProfile(); // Reload profile form with updated data
     return true;
+
+  } catch (error) {
+    console.error('Error en updateEmpresaProfile:', error);
+    alert('Ocurrió un error de red. Por favor, intenta de nuevo.');
+    return false;
   }
-  
-  return false;
 }
 
-function updateSocioProfile(profileData) {
+async function updateSocioProfile(profileData) {
   if (!currentUser || userType !== 'socio') return false;
-  
-  const socios = JSON.parse(localStorage.getItem('socios') || '[]');
-  const socioIndex = socios.findIndex(s => s.id === currentUser.id);
-  
-  if (socioIndex !== -1) {
-    socios[socioIndex] = { ...socios[socioIndex], ...profileData };
-    localStorage.setItem('socios', JSON.stringify(socios));
+
+  try {
+    const token = localStorage.getItem('token');
+    const response = await fetch(`${apiUrl}/api/socios/profile`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify(profileData),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      alert(`Error al actualizar el perfil: ${errorData.message || response.statusText}`);
+      return false;
+    }
+
+    const result = await response.json();
     
-    // Update current user
-    currentUser = socios[socioIndex];
+    // Update current user in localStorage
+    currentUser = result.user;
     localStorage.setItem('currentUser', JSON.stringify(currentUser));
     
+    alert('Perfil actualizado exitosamente');
+    loadSocioProfile(); // Reload profile form with updated data
     return true;
+
+  } catch (error) {
+    console.error('Error en updateSocioProfile:', error);
+    alert('Ocurrió un error de red. Por favor, intenta de nuevo.');
+    return false;
   }
-  
-  return false;
 }
 
 // Cliente management functions
-function agregarCliente(clienteData) {
-  const clientes = JSON.parse(localStorage.getItem('clientes') || '[]');
-  
-  const nuevoCliente = {
-    id: clientes.length + 1,
-    socioId: currentUser.id,
-    ...clienteData,
-    fechaRegistro: new Date().toISOString()
-  };
-  
-  clientes.push(nuevoCliente);
-  localStorage.setItem('clientes', JSON.stringify(clientes));
-  
-  return true;
+async function agregarCliente(clienteData) {
+  try {
+    const token = localStorage.getItem('token');
+    const response = await fetch(`${apiUrl}/api/clientes`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify(clienteData),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      alert(`Error al agregar el cliente: ${errorData.message || response.statusText}`);
+      return false;
+    }
+
+    alert('Cliente agregado exitosamente');
+    closeAgregarClienteModal();
+    loadClientes();
+    return true;
+
+  } catch (error) {
+    console.error('Error en agregarCliente:', error);
+    alert('Ocurrió un error de red. Por favor, intenta de nuevo.');
+    return false;
+  }
 }
 
-function loadClientes() {
+async function loadClientes() {
   if (!currentUser || userType !== 'socio') return;
-  
-  const clientes = JSON.parse(localStorage.getItem('clientes') || '[]');
-  const socioClientes = clientes.filter(c => c.socioId === currentUser.id);
-  const proformas = JSON.parse(localStorage.getItem('proformas') || '[]');
-  
-  const tableBody = document.getElementById('clientes-table');
-  if (!tableBody) return;
-  
-  tableBody.innerHTML = '';
-  
-  if (socioClientes.length === 0) {
-    tableBody.innerHTML = '<tr><td colspan="7">No tienes clientes registrados aún.</td></tr>';
-    return;
+
+  try {
+    const token = localStorage.getItem('token');
+    const response = await fetch(`${apiUrl}/api/clientes`, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      console.error(`Error al cargar clientes: ${errorData.message || response.statusText}`);
+      return;
+    }
+
+    const socioClientes = await response.json();
+    const tableBody = document.getElementById('clientes-table');
+    if (!tableBody) return;
+
+    tableBody.innerHTML = '';
+
+    if (socioClientes.length === 0) {
+      tableBody.innerHTML = '<tr><td colspan="7">No tienes clientes registrados aún.</td></tr>';
+      return;
+    }
+
+    socioClientes.forEach(cliente => {
+      const nombreCompleto = cliente.tipo === 'empresa' ?
+        cliente.razon_social :
+        `${cliente.nombres} ${cliente.apellidos}`;
+
+      const row = document.createElement('tr');
+      row.innerHTML = `
+        <td>${nombreCompleto}</td>
+        <td>${cliente.tipo === 'empresa' ? cliente.representante : 'N/A'}</td>
+        <td>${cliente.email}</td>
+        <td>${cliente.telefono}</td>
+        <td>${cliente.direccion}, ${cliente.ciudad}</td>
+        <td>0</td>
+        <td>
+          <button class="btn-action btn-view" onclick="verCliente(${cliente.id})">Ver</button>
+          <button class="btn-action btn-primary" onclick="solicitarProformaCliente(${cliente.id})">Nueva Proforma</button>
+          <button class="btn-action btn-edit" onclick="editarCliente(${cliente.id})">Editar</button>
+        </td>
+      `;
+      tableBody.appendChild(row);
+    });
+  } catch (error) {
+    console.error('Error en loadClientes:', error);
   }
-  
-  socioClientes.forEach(cliente => {
-    const clienteProformas = proformas.filter(p => p.clienteId === cliente.id);
-    const nombreCompleto = cliente.tipo === 'empresa' ? 
-      cliente.razonSocial : 
-      `${cliente.nombres} ${cliente.apellidos}`;
-    
-    const row = document.createElement('tr');
-    row.innerHTML = `
-      <td>${nombreCompleto}</td>
-      <td>${cliente.tipo === 'empresa' ? cliente.representante : 'N/A'}</td>
-      <td>${cliente.email}</td>
-      <td>${cliente.telefono}</td>
-      <td>${cliente.direccion}, ${cliente.ciudad}</td>
-      <td>${clienteProformas.length}</td>
-      <td>
-        <button class="btn-action btn-view" onclick="verCliente(${cliente.id})">Ver</button>
-        <button class="btn-action btn-primary" onclick="solicitarProformaCliente(${cliente.id})">Nueva Proforma</button>
-        <button class="btn-action btn-edit" onclick="editarCliente(${cliente.id})">Editar</button>
-      </td>
-    `;
-    tableBody.appendChild(row);
-  });
 }
 
 // Proforma management functions
-function solicitarProforma(proformaData) {
-  const proformas = JSON.parse(localStorage.getItem('proformas') || '[]');
-  const clientes = JSON.parse(localStorage.getItem('clientes') || '[]');
-  const productos = JSON.parse(localStorage.getItem('productos') || '[]');
-  
-  const cliente = clientes.find(c => c.id == proformaData.clienteId);
-  const producto = productos.find(p => p.id == proformaData.productoId);
-  
-  if (!cliente || !producto) {
-    alert('Error: Cliente o producto no encontrado');
+async function solicitarProforma(proformaData) {
+  try {
+    const token = localStorage.getItem('token');
+    const response = await fetch(`${apiUrl}/api/proformas`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify(proformaData),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      alert(`Error al solicitar la proforma: ${errorData.message || response.statusText}`);
+      return false;
+    }
+
+    alert('Proforma solicitada exitosamente');
+    closeSolicitarProformaModal();
+    loadProformasSocio();
+    return true;
+
+  } catch (error) {
+    console.error('Error en solicitarProforma:', error);
+    alert('Ocurrió un error de red. Por favor, intenta de nuevo.');
     return false;
   }
-  
-  const nuevaProforma = {
-    id: proformas.length + 1,
-    socioId: currentUser.id,
-    clienteId: parseInt(proformaData.clienteId),
-    empresaId: parseInt(proformaData.empresaId),
-    productoId: parseInt(proformaData.productoId),
-    cantidad: parseInt(proformaData.cantidad),
-    precioEstimado: parseFloat(proformaData.precioEstimado),
-    observaciones: proformaData.observaciones,
-    urgencia: proformaData.urgencia,
-    estado: 'enviada',
-    fechaSolicitud: new Date().toISOString(),
-    // Información del cliente para la empresa
-    clienteInfo: {
-      nombre: cliente.tipo === 'empresa' ? cliente.razonSocial : `${cliente.nombres} ${cliente.apellidos}`,
-      tipo: cliente.tipo,
-      documento: cliente.tipo === 'empresa' ? cliente.ruc : cliente.cedula,
-      email: cliente.email,
-      telefono: cliente.telefono,
-      direccion: `${cliente.direccion}, ${cliente.ciudad}`,
-      representante: cliente.representante || null
-    }
-  };
-  
-  proformas.push(nuevaProforma);
-  localStorage.setItem('proformas', JSON.stringify(proformas));
-  
-  return true;
 }
 
-function generarProformaRespuesta(proformaId, respuestaData) {
-  const proformas = JSON.parse(localStorage.getItem('proformas') || '[]');
-  const proformaIndex = proformas.findIndex(p => p.id === proformaId);
-  
-  if (proformaIndex === -1) return false;
-  
-  const proforma = proformas[proformaIndex];
-  
-  // Generate proforma number
-  const proformaNumber = `PRO-${String(proformaId).padStart(4, '0')}-${new Date().getFullYear()}`;
-  
-  proformas[proformaIndex] = {
-    ...proforma,
-    estado: 'aprobada',
-    fechaRespuesta: new Date().toISOString(),
-    numeroProforma: proformaNumber,
-    respuesta: {
-      ...respuestaData,
-      precioUnitario: parseFloat(respuestaData.precio),
-      descuento: parseFloat(respuestaData.descuento) || 0,
-      tiempoEntrega: parseInt(respuestaData.tiempoEntrega),
-      validezHasta: respuestaData.validezHasta,
-      terminos: respuestaData.terminos,
-      notas: respuestaData.notas
+async function generarProformaRespuesta(proformaId, respuestaData) {
+  try {
+    const token = localStorage.getItem('token');
+    const response = await fetch(`${apiUrl}/api/proformas/${proformaId}/respuesta`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ respuesta: respuestaData }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      alert(`Error al generar la proforma: ${errorData.message || response.statusText}`);
+      return false;
     }
-  };
-  
-  localStorage.setItem('proformas', JSON.stringify(proformas));
-  
-  return true;
+
+    alert('Proforma generada y enviada al socio exitosamente');
+    closeGenerarProformaModal();
+    loadProformasEmpresa();
+    return true;
+
+  } catch (error) {
+    console.error('Error en generarProformaRespuesta:', error);
+    alert('Ocurrió un error de red. Por favor, intenta de nuevo.');
+    return false;
+  }
 }
 
-function loadProformasEmpresa() {
+async function loadProformasEmpresa() {
   if (!currentUser || userType !== 'empresa') return;
-  
-  const proformas = JSON.parse(localStorage.getItem('proformas') || '[]');
-  const productos = JSON.parse(localStorage.getItem('productos') || '[]');
-  const socios = JSON.parse(localStorage.getItem('socios') || '[]');
-  
-  const empresaProductos = productos.filter(p => p.empresaId === currentUser.id);
-  const empresaProductosIds = empresaProductos.map(p => p.id);
-  
-  const empresaProformas = proformas.filter(p => 
-    empresaProductosIds.includes(p.productoId)
-  );
-  
-  const tableBody = document.getElementById('proformas-empresa-table');
-  if (!tableBody) return;
-  
-  tableBody.innerHTML = '';
-  
-  if (empresaProformas.length === 0) {
-    tableBody.innerHTML = '<tr><td colspan="8">No hay proformas solicitadas aún.</td></tr>';
-    return;
+
+  try {
+    const token = localStorage.getItem('token');
+    const response = await fetch(`${apiUrl}/api/proformas/empresa`, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      console.error(`Error al cargar las proformas: ${errorData.message || response.statusText}`);
+      return;
+    }
+
+    const empresaProformas = await response.json();
+    const tableBody = document.getElementById('proformas-empresa-table');
+    if (!tableBody) return;
+
+    tableBody.innerHTML = '';
+
+    if (empresaProformas.length === 0) {
+      tableBody.innerHTML = '<tr><td colspan="8">No hay proformas solicitadas aún.</td></tr>';
+      return;
+    }
+
+    empresaProformas.forEach(proforma => {
+      const total = proforma.cantidad * proforma.precio_estimado;
+      const statusClass = proforma.estado === 'enviada' ? 'status-enviada' :
+                        proforma.estado === 'aprobada' ? 'status-aprobada' : 'status-rechazada';
+
+      const row = document.createElement('tr');
+      row.innerHTML = `
+        <td>${new Date(proforma.fecha_solicitud).toLocaleDateString()}</td>
+        <td>${proforma.socio_nombres} ${proforma.socio_apellidos}</td>
+        <td>${proforma.cliente_razon_social || (proforma.cliente_nombres + ' ' + proforma.cliente_apellidos)}</td>
+        <td>${proforma.producto_nombre || 'N/A'}</td>
+        <td>${proforma.cantidad}</td>
+        <td>$${total.toFixed(2)}</td>
+        <td><span class="${statusClass}">${proforma.estado}</span></td>
+        <td>
+          <button class="btn-action btn-view" onclick="verDetallesProforma(${proforma.id})">Ver</button>
+          ${proforma.estado === 'enviada' ?
+            `<button class="btn-action btn-primary" onclick="mostrarGenerarProforma(${proforma.id})">Generar</button>` :
+            `<button class="btn-action btn-view" onclick="verProformaGenerada(${proforma.id})">Proforma</button>`
+          }
+        </td>
+      `;
+      tableBody.appendChild(row);
+    });
+  } catch (error) {
+    console.error('Error en loadProformasEmpresa:', error);
   }
-  
-  empresaProformas.forEach(proforma => {
-    const producto = productos.find(p => p.id === proforma.productoId);
-    const socio = socios.find(s => s.id === proforma.socioId);
-    
-    const total = proforma.cantidad * (producto?.precio || 0);
-    const statusClass = proforma.estado === 'enviada' ? 'status-enviada' : 
-                      proforma.estado === 'aprobada' ? 'status-aprobada' : 'status-rechazada';
-    
-    const row = document.createElement('tr');
-    row.innerHTML = `
-      <td>${new Date(proforma.fechaSolicitud).toLocaleDateString()}</td>
-      <td>${socio?.nombres} ${socio?.apellidos}</td>
-      <td>${proforma.clienteInfo.nombre}</td>
-      <td>${producto?.nombre || 'N/A'}</td>
-      <td>${proforma.cantidad}</td>
-      <td>$${total.toFixed(2)}</td>
-      <td><span class="${statusClass}">${proforma.estado}</span></td>
-      <td>
-        <button class="btn-action btn-view" onclick="verDetallesProforma(${proforma.id})">Ver</button>
-        ${proforma.estado === 'enviada' ? 
-          `<button class="btn-action btn-primary" onclick="mostrarGenerarProforma(${proforma.id})">Generar</button>` : 
-          `<button class="btn-action btn-view" onclick="verProformaGenerada(${proforma.id})">Proforma</button>`
-        }
-      </td>
-    `;
-    tableBody.appendChild(row);
-  });
 }
 
-function loadProformasSocio() {
+async function loadProformasSocio() {
   if (!currentUser || userType !== 'socio') return;
-  
-  const proformas = JSON.parse(localStorage.getItem('proformas') || '[]');
-  const empresas = JSON.parse(localStorage.getItem('empresas') || '[]');
-  const productos = JSON.parse(localStorage.getItem('productos') || '[]');
-  const clientes = JSON.parse(localStorage.getItem('clientes') || '[]');
-  
-  const socioProformas = proformas.filter(p => p.socioId === currentUser.id);
-  
-  const tableBody = document.getElementById('proformas-socio-table');
-  if (!tableBody) return;
-  
-  tableBody.innerHTML = '';
-  
-  if (socioProformas.length === 0) {
-    tableBody.innerHTML = '<tr><td colspan="8">No has solicitado proformas aún.</td></tr>';
-    return;
+
+  try {
+    const token = localStorage.getItem('token');
+    const response = await fetch(`${apiUrl}/api/proformas/socio`, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      console.error(`Error al cargar las proformas: ${errorData.message || response.statusText}`);
+      return;
+    }
+
+    const socioProformas = await response.json();
+    const tableBody = document.getElementById('proformas-socio-table');
+    if (!tableBody) return;
+
+    tableBody.innerHTML = '';
+
+    if (socioProformas.length === 0) {
+      tableBody.innerHTML = '<tr><td colspan="8">No has solicitado proformas aún.</td></tr>';
+      return;
+    }
+
+    socioProformas.forEach(proforma => {
+      const statusClass = proforma.estado === 'enviada' ? 'status-enviada' :
+                        proforma.estado === 'aprobada' ? 'status-aprobada' : 'status-rechazada';
+
+      const row = document.createElement('tr');
+      row.innerHTML = `
+        <td>${new Date(proforma.fecha_solicitud).toLocaleDateString()}</td>
+        <td>${proforma.cliente_razon_social || (proforma.cliente_nombres + ' ' + proforma.cliente_apellidos)}</td>
+        <td>${proforma.empresa_nombre || 'N/A'}</td>
+        <td>${proforma.producto_nombre || 'N/A'}</td>
+        <td>${proforma.cantidad}</td>
+        <td>$${parseFloat(proforma.precio_estimado).toFixed(2)}</td>
+        <td><span class="${statusClass}">${proforma.estado}</span></td>
+        <td>
+          <button class="btn-action btn-view" onclick="verEstadoProforma(${proforma.id})">Ver</button>
+          ${proforma.estado === 'aprobada' ?
+            `<button class="btn-action btn-primary" onclick="verProformaRecibida(${proforma.id})">Proforma</button>` : ''
+          }
+        </td>
+      `;
+      tableBody.appendChild(row);
+    });
+  } catch (error) {
+    console.error('Error en loadProformasSocio:', error);
   }
-  
-  socioProformas.forEach(proforma => {
-    const empresa = empresas.find(e => e.id === proforma.empresaId);
-    const producto = productos.find(p => p.id === proforma.productoId);
-    const cliente = clientes.find(c => c.id === proforma.clienteId);
-    
-    const statusClass = proforma.estado === 'enviada' ? 'status-enviada' : 
-                      proforma.estado === 'aprobada' ? 'status-aprobada' : 'status-rechazada';
-    
-    const row = document.createElement('tr');
-    row.innerHTML = `
-      <td>${new Date(proforma.fechaSolicitud).toLocaleDateString()}</td>
-      <td>${cliente ? (cliente.tipo === 'empresa' ? cliente.razonSocial : `${cliente.nombres} ${cliente.apellidos}`) : 'N/A'}</td>
-      <td>${empresa?.nombre || 'N/A'}</td>
-      <td>${producto?.nombre || 'N/A'}</td>
-      <td>${proforma.cantidad}</td>
-      <td>$${proforma.precioEstimado.toFixed(2)}</td>
-      <td><span class="${statusClass}">${proforma.estado}</span></td>
-      <td>
-        <button class="btn-action btn-view" onclick="verEstadoProforma(${proforma.id})">Ver</button>
-        ${proforma.estado === 'aprobada' ? 
-          `<button class="btn-action btn-primary" onclick="verProformaRecibida(${proforma.id})">Proforma</button>` : ''
-        }
-      </td>
-    `;
-    tableBody.appendChild(row);
-  });
 }
 
 // Modal functions for clientes and proformas
@@ -1565,7 +1666,7 @@ function filterProformasSocio() {
 
 // Initialize app
 document.addEventListener('DOMContentLoaded', function() {
-  initializeData();
+  
   
   // Check if user is logged in
   const savedUser = localStorage.getItem('currentUser');
@@ -1621,6 +1722,40 @@ document.addEventListener('DOMContentLoaded', function() {
       }
     });
   }
+
+  // Handle edit product form
+  document.getElementById('edit-product-form').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    const producto = Object.fromEntries(formData.entries());
+    const productId = producto.id;
+
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${apiUrl}/api/products/${productId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(producto),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        alert(`Error al actualizar el producto: ${errorData.message || response.statusText}`);
+        return;
+      }
+
+      alert('Producto actualizado exitosamente');
+      closeEditProductModal();
+      loadProducts();
+
+    } catch (error) {
+      console.error('Error en la actualización del producto:', error);
+      alert('Ocurrió un error de red. Por favor, intenta de nuevo.');
+    }
+  });
   
   // Update estimated price when quantity or product changes
   const cantidadProforma = document.getElementById('proforma-cantidad-socio');
