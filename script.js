@@ -213,7 +213,7 @@ function logout() {
 }
 
 // Tab functionality
-function showTab(tabName) {
+function showTab(tabName, el) {
   // Hide all tabs
   document.querySelectorAll('.tab-content').forEach(tab => {
     tab.classList.remove('active');
@@ -227,8 +227,18 @@ function showTab(tabName) {
   // Show selected tab
   document.getElementById(tabName + '-tab').classList.add('active');
   
-  // Add active class to clicked button
-  event.target.classList.add('active');
+  // Add active class to clicked button or matching tab button
+  if (el) {
+    el.classList.add('active');
+  } else {
+    const buttons = document.querySelectorAll('.tab-btn');
+    buttons.forEach(btn => {
+      const onclickAttr = btn.getAttribute('onclick') || '';
+      if (onclickAttr.includes("showTab('" + tabName + "')") || onclickAttr.includes("showTab(\"" + tabName + "\")")) {
+        btn.classList.add('active');
+      }
+    });
+  }
 }
 
 // Section navigation
@@ -1615,22 +1625,6 @@ document.addEventListener('DOMContentLoaded', function() {
     clienteSelect.addEventListener('change', function() {
       if (this.value) {
         mostrarInfoCliente(this.value);
-      } else {
-        document.getElementById('cliente-info-preview').innerHTML = '';
-      }
-    });
-  }
-  
-  // Close modals when clicking outside
-  window.onclick = function(event) {
-    const modals = document.querySelectorAll('.modal');
-    modals.forEach(modal => {
-      if (event.target === modal) {
-        modal.style.display = 'none';
-      }
-    });
-  };
-});trarInfoCliente(this.value);
       } else {
         document.getElementById('cliente-info-preview').innerHTML = '';
       }
