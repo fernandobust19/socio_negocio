@@ -38,6 +38,29 @@ const pool = new Pool({
 // Migración ligera: asegurar columnas/tablas requeridas
 (async () => {
   try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS empresas (
+        id SERIAL PRIMARY KEY,
+        nombre VARCHAR(255) NOT NULL,
+        email VARCHAR(255) UNIQUE NOT NULL,
+        password_hash TEXT NOT NULL,
+        fecha_creacion TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS socios (
+        id SERIAL PRIMARY KEY,
+        nombres VARCHAR(100) NOT NULL,
+        apellidos VARCHAR(100) NOT NULL,
+        cedula VARCHAR(20) UNIQUE NOT NULL,
+        telefono VARCHAR(50) NOT NULL,
+        email VARCHAR(255) UNIQUE NOT NULL,
+        password_hash TEXT NOT NULL,
+        direccion TEXT,
+        experiencia TEXT,
+        fecha_registro TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
     await pool.query('ALTER TABLE empresas ADD COLUMN IF NOT EXISTS ruc VARCHAR(20);');
     await pool.query('ALTER TABLE empresas ADD COLUMN IF NOT EXISTS logo_url TEXT;');
     await pool.query('ALTER TABLE empresas ADD COLUMN IF NOT EXISTS direccion TEXT;');
