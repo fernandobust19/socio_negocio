@@ -10,7 +10,7 @@
 <body>
   <div class="navbar">
     <div class="nav-brand">Socio Negocio</div>
-    <a href="index.html" class="nav-link">¿ Volver al inicio</a>
+    <a href="index.html" class="nav-link">← Volver al inicio</a>
   </div>
 
   <div class="auth-container">
@@ -81,7 +81,7 @@
 
   <script src="script.js"></script>
   <script>
-    // Handle socio login
+    // Login del socio
     document.getElementById('socio-login-form').addEventListener('submit', async function(e) {
       e.preventDefault();
       const email = document.getElementById('login-email').value;
@@ -95,7 +95,7 @@
       }
     });
 
-    // Handle socio registration
+    // Registro del socio
     document.getElementById('socio-register-form').addEventListener('submit', async function(e) {
       e.preventDefault();
       const formData = new FormData(e.target);
@@ -110,4 +110,3 @@
   </script>
 </body>
 </html>
-

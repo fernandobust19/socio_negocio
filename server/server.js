@@ -35,15 +35,6 @@ const pool = new Pool({
 // Migraciones automáticas
 (async () => {
   try {
-    // Validaciones de longitud para prevenir errores 22001 (truncation)
-    if (
-      (typeof nombre === 'string' && nombre.length > 255) ||
-      (typeof email === 'string' && email.length > 255) ||
-      (typeof ruc === 'string' && ruc.length > 20) ||
-      (typeof telefono === 'string' && telefono.length > 50)
-    ) {
-      return res.status(400).json({ message: 'Alguno de los campos excede la longitud permitida.' });
-    }
     await pool.query(`
       CREATE TABLE IF NOT EXISTS empresas (
         id SERIAL PRIMARY KEY,
@@ -170,6 +161,45 @@ function saveDataUrlToFile(dataUrl, subfolder) {
   }
 }
 
+// Fallback simple a archivo JSON cuando la BD no esté disponible o se fuerce por .env
+const USE_FILE_DB = String(process.env.USE_FILE_DB || '').toLowerCase() === 'true';
+const DATA_DIR = path.join(__dirname, 'public', 'data');
+const EMPRESAS_FILE = path.join(DATA_DIR, 'empresas.json');
+
+function ensureDataDir() {
+  try { fs.mkdirSync(DATA_DIR, { recursive: true }); } catch (_) {}
+}
+
+function readEmpresasFile() {
+  ensureDataDir();
+  try {
+    const raw = fs.readFileSync(EMPRESAS_FILE, 'utf8');
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (_) {
+    return [];
+  }
+}
+
+function writeEmpresasFile(arr) {
+  ensureDataDir();
+  fs.writeFileSync(EMPRESAS_FILE, JSON.stringify(arr, null, 2), 'utf8');
+}
+
+function isDbConnectionError(err) {
+  const msg = (err && err.message ? err.message : '').toLowerCase();
+  const code = err && err.code ? String(err.code) : '';
+  return (
+    code === 'ECONNREFUSED' ||
+    code === 'ENOTFOUND' ||
+    code === '28P01' || // auth error
+    msg.includes('connect') ||
+    msg.includes('timeout') ||
+    msg.includes('self signed') ||
+    msg.includes('certificate')
+  );
+}
+
 // Registro empresa
 app.post('/api/register/empresa', async (req, res) => {
   const { nombre, ruc, direccion, telefono, email, password, descripcion, logo } = req.body;
@@ -197,12 +227,42 @@ app.post('/api/register/empresa', async (req, res) => {
         return res.status(400).json({ message: 'El logo no pudo guardarse. Verifica el formato.' });
       }
     }
-    const { rows } = await pool.query(
-      `INSERT INTO empresas (nombre, ruc, direccion, telefono, email, password_hash, descripcion, logo_url)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING id, nombre, email, logo_url;`,
-      [t(nombre), t(ruc), t(direccion), t(telefono), t(email), password_hash, t(descripcion), logo_url]
-    );
-    res.status(201).json({ message: 'Empresa registrada exitosamente', user: rows[0] });
+    // Si se fuerza el fallback por env, usar archivo JSON
+    if (USE_FILE_DB) {
+      const empresas = readEmpresasFile();
+      if (empresas.some(e => (e.email || '').toLowerCase() === t(email).toLowerCase())) {
+        return res.status(409).json({ message: 'El email ya está registrado.' });
+      }
+      const nowId = Date.now();
+      const nueva = { id: nowId, nombre: t(nombre), ruc: t(ruc), direccion: t(direccion), telefono: t(telefono), email: t(email), password_hash, descripcion: t(descripcion), logo_url };
+      empresas.push(nueva);
+      writeEmpresasFile(empresas);
+      return res.status(201).json({ message: 'Empresa registrada exitosamente', user: { id: nowId, nombre: nueva.nombre, email: nueva.email, logo_url: nueva.logo_url } });
+    }
+
+    // Intento normal con BD
+    try {
+      const { rows } = await pool.query(
+        `INSERT INTO empresas (nombre, ruc, direccion, telefono, email, password_hash, descripcion, logo_url)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING id, nombre, email, logo_url;`,
+        [t(nombre), t(ruc), t(direccion), t(telefono), t(email), password_hash, t(descripcion), logo_url]
+      );
+      return res.status(201).json({ message: 'Empresa registrada exitosamente', user: rows[0] });
+    } catch (dbErr) {
+      // Si es un problema de conexión, hacer fallback a archivo
+      if (isDbConnectionError(dbErr)) {
+        const empresas = readEmpresasFile();
+        if (empresas.some(e => (e.email || '').toLowerCase() === t(email).toLowerCase())) {
+          return res.status(409).json({ message: 'El email ya está registrado.' });
+        }
+        const nowId = Date.now();
+        const nueva = { id: nowId, nombre: t(nombre), ruc: t(ruc), direccion: t(direccion), telefono: t(telefono), email: t(email), password_hash, descripcion: t(descripcion), logo_url };
+        empresas.push(nueva);
+        writeEmpresasFile(empresas);
+        return res.status(201).json({ message: 'Empresa registrada exitosamente (modo sin BD)', user: { id: nowId, nombre: nueva.nombre, email: nueva.email, logo_url: nueva.logo_url } });
+      }
+      throw dbErr;
+    }
   } catch (err) {
     if (err.code === '23505') return res.status(409).json({ message: 'El email ya está registrado.' });
     if (err.code === '22P02') return res.status(400).json({ message: 'Formato de datos inválido.' });
