@@ -6,18 +6,18 @@
   <title>Socio - Socio Negocio</title>
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="styles.css">
-</head>
+  </head>
 <body>
   <div class="navbar">
     <div class="nav-brand">Socio Negocio</div>
-    <a href="index.html" class="nav-link">← Volver al inicio</a>
+    <a href="index.html" class="nav-link">¿ Volver al inicio</a>
   </div>
 
   <div class="auth-container">
     <div class="auth-card">
       <h1>Portal Socios</h1>
       <p class="subtitle">Únete como socio y empieza a vender productos</p>
-      
+
       <div class="tab-container">
         <button class="tab-btn active" onclick="showTab('login')">Iniciar Sesión</button>
         <button class="tab-btn" onclick="showTab('register')">Registrarse</button>
@@ -51,7 +51,7 @@
           </div>
           <div class="form-group">
             <label for="socio-cedula">Cédula:</label>
-            <input type="text" id="socio-cedula" name="cedula" pattern="\\d{8,13}" title="Ingrese 8 a 13 dígitos" required>
+            <input type="text" id="socio-cedula" name="cedula" pattern="\d{8,13}" title="Ingrese 8 a 13 dígitos" required>
           </div>
           <div class="form-group">
             <label for="socio-telefono">Teléfono:</label>
@@ -86,7 +86,7 @@
       e.preventDefault();
       const email = document.getElementById('login-email').value;
       const password = document.getElementById('login-password').value;
-      
+
       const success = await loginSocio(email, password);
       if (success) {
         window.location.href = 'dashboard-socio.html';
@@ -100,17 +100,14 @@
       e.preventDefault();
       const formData = new FormData(e.target);
       const socio = Object.fromEntries(formData.entries());
-      
+
       const success = await registerSocio(socio);
       if (success) {
-        // The success alert is handled inside registerSocio.
-        // Now, we switch to the login tab so the user can log in.
         showTab('login');
-        // Optional: Clear the registration form
         e.target.reset();
       }
-      // The error alert is also handled inside registerSocio
     });
   </script>
 </body>
 </html>
+
