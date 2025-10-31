@@ -3,7 +3,7 @@
 // En producción (Render), usaremos una ruta relativa y una regla de reescritura.
 const apiUrl = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
   ? 'http://localhost:3000'
-  : 'https://socio-negocio.onrender.com';
+  : '';
 let currentUser = null;
 let userType = null; // 'empresa' or 'socio'
 
