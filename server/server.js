@@ -35,6 +35,7 @@ const pool = new Pool({
 // Migraciones automáticas
 (async () => {
   try {
+    console.log('[schema] Migraciones básicas: creando tablas si no existen');
     await pool.query(`
       CREATE TABLE IF NOT EXISTS empresas (
         id SERIAL PRIMARY KEY,
@@ -123,6 +124,36 @@ const pool = new Pool({
         fecha_respuesta TIMESTAMP WITH TIME ZONE
       );
     `);
+
+    // Auto-saneamiento de esquema para despliegues donde ya existían tablas antiguas
+    console.log('[schema] Auto-saneado: asegurando columnas e índices requeridos');
+    // Nota: IF NOT EXISTS hace que estas sentencias sean idempotentes.
+    await pool.query(`
+      -- empresas: asegurar columnas utilizadas por API
+      ALTER TABLE empresas ADD COLUMN IF NOT EXISTS ruc VARCHAR(20);
+      ALTER TABLE empresas ADD COLUMN IF NOT EXISTS direccion TEXT;
+      ALTER TABLE empresas ADD COLUMN IF NOT EXISTS telefono VARCHAR(50);
+      ALTER TABLE empresas ADD COLUMN IF NOT EXISTS descripcion TEXT;
+      ALTER TABLE empresas ADD COLUMN IF NOT EXISTS logo_url TEXT;
+      -- índices únicos mínimos
+      CREATE UNIQUE INDEX IF NOT EXISTS empresas_email_key ON empresas (email);
+
+      -- socios: asegurar columnas y unicidad
+      ALTER TABLE socios ADD COLUMN IF NOT EXISTS direccion TEXT;
+      ALTER TABLE socios ADD COLUMN IF NOT EXISTS experiencia TEXT;
+      ALTER TABLE socios ADD COLUMN IF NOT EXISTS fecha_registro TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP;
+      CREATE UNIQUE INDEX IF NOT EXISTS socios_email_key ON socios (email);
+      CREATE UNIQUE INDEX IF NOT EXISTS socios_cedula_key ON socios (cedula);
+
+      -- productos: columnas recientes
+      ALTER TABLE productos ADD COLUMN IF NOT EXISTS categoria VARCHAR(100);
+      ALTER TABLE productos ADD COLUMN IF NOT EXISTS color_capuchon VARCHAR(100);
+      ALTER TABLE productos ADD COLUMN IF NOT EXISTS fecha_creacion TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP;
+
+      -- ventas: asegurar columnas claves
+      ALTER TABLE ventas ADD COLUMN IF NOT EXISTS comision_total NUMERIC(10,2) NOT NULL DEFAULT 0;
+    `);
+    console.log('[schema] Auto-saneado completado');
   } catch (e) {
     console.warn('Migración error:', e.message);
   }
@@ -273,6 +304,9 @@ app.post('/api/register/empresa', async (req, res) => {
     res.status(500).json({ message: msg, code: err.code });
   }
 });
+
+// Evitar 404 de favicon en producción
+app.get('/favicon.ico', (_req, res) => res.status(204).end());
 
 // Registro socio
 app.post('/api/register/socio', async (req, res) => {
