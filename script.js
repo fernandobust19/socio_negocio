@@ -1803,3 +1803,86 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   };
 });
+// === API Debug Panel (enable with ?debug=1 or localStorage.DEBUG_API='1') ===
+(() => {
+  try {
+    const isDebug = /[?&]debug=1\b/.test(location.search) || localStorage.getItem('DEBUG_API') === '1';
+    if (!isDebug || typeof window.fetch !== 'function') return;
+
+    const panel = document.createElement('div');
+    panel.id = 'api-debug-panel';
+    panel.style.cssText = [
+      'position:fixed', 'right:12px', 'bottom:12px', 'z-index:99999',
+      'width:min(520px,95vw)', 'max-height:55vh', 'overflow:auto',
+      'background:#0b1020', 'color:#e8eefc',
+      'font:12px/1.4 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace',
+      'border:1px solid #334', 'border-radius:12px', 'box-shadow:0 6px 18px rgba(0,0,0,.35)'
+    ].join(';');
+    panel.innerHTML = (
+      '<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border-bottom:1px solid #334;">' +
+        '<strong>API Debug</strong>' +
+        '<div>' +
+          '<button id="api-debug-copy" style="margin-right:6px">Copy</button>' +
+          '<button id="api-debug-close">Close</button>' +
+        '</div>' +
+      '</div>' +
+      '<pre id="api-debug-pre" style="margin:0;padding:10px;white-space:pre-wrap;"></pre>'
+    );
+    document.addEventListener('DOMContentLoaded', () => document.body.appendChild(panel));
+    const pre = panel.querySelector('#api-debug-pre');
+    panel.querySelector('#api-debug-close').onclick = () => panel.remove();
+    panel.querySelector('#api-debug-copy').onclick = async () => {
+      try { await navigator.clipboard.writeText(pre.textContent || ''); } catch(_) {}
+    };
+
+    const origFetch = window.fetch.bind(window);
+    window.fetch = async (input, init = {}) => {
+      const req = new Request(input, init);
+      if (!/\/api\//.test(req.url)) return origFetch(input, init);
+
+      // Try to preview JSON body (non-destructive)
+      let bodyPreview = null;
+      try {
+        if (req.headers.get('Content-Type')?.includes('application/json') && req.body) {
+          const cloneForBody = new Request(req);
+          bodyPreview = await cloneForBody.json();
+        }
+      } catch (_) {}
+
+      const startedAt = new Date();
+      let res, status, json, text, out;
+      try {
+        res = await origFetch(req);
+        status = res.status;
+        try { json = await res.clone().json(); } catch { text = await res.clone().text(); }
+        out = {
+          time: startedAt.toISOString(),
+          request: { method: req.method, url: req.url, headers: Object.fromEntries(req.headers.entries()), body: bodyPreview },
+          response: { status, json, text }
+        };
+        pre.textContent = JSON.stringify(out, null, 2);
+        console[status >= 400 ? 'error' : 'log']('[API DEBUG]', out);
+        return res;
+      } catch (err) {
+        out = {
+          time: startedAt.toISOString(),
+          request: { method: req.method, url: req.url, headers: Object.fromEntries(req.headers.entries()), body: bodyPreview },
+          error: { name: err?.name, message: err?.message }
+        };
+        pre.textContent = JSON.stringify(out, null, 2);
+        console.error('[API DEBUG]', out);
+        throw err;
+      }
+    };
+
+    window.addEventListener('keydown', (e) => {
+      if (e.altKey && e.key && e.key.toLowerCase() === 'd') {
+        panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+      }
+    });
+
+    console.log('[API DEBUG] Interceptor activo. Usa ?debug=1 o localStorage.DEBUG_API="1"');
+  } catch (e) {
+    try { console.warn('[API DEBUG] no se pudo activar:', e?.message || e); } catch(_) {}
+  }
+})();
