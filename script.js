@@ -1840,12 +1840,18 @@ document.addEventListener('DOMContentLoaded', function() {
       const req = new Request(input, init);
       if (!/\/api\//.test(req.url)) return origFetch(input, init);
 
-      // Try to preview JSON body (non-destructive)
+      // Try to preview request body safely using clone()
       let bodyPreview = null;
       try {
-        if (req.headers.get('Content-Type')?.includes('application/json') && req.body) {
-          const cloneForBody = new Request(req);
-          bodyPreview = await cloneForBody.json();
+        const ct = req.headers.get('Content-Type') || '';
+        // Clone the request so we don't consume the original body
+        const cloneForBody = req.clone();
+        // Some bodies may be empty or non-readable
+        const raw = await cloneForBody.text();
+        if (raw && ct.includes('application/json')) {
+          try { bodyPreview = JSON.parse(raw); } catch { bodyPreview = raw; }
+        } else if (raw) {
+          bodyPreview = raw;
         }
       } catch (_) {}
 
